@@ -1,41 +1,28 @@
--- SymonHub: Token Generator with GUI
--- Features:
--- - Adds 100 tokens per second.
--- - Toggle to enable/disable the token generator.
--- - Basic GUI for mobile players.
-
+-- Invisibility Script for Universal Use
 local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 
-local tokens = 0
-local isTokenGeneratorActive = false
+local isInvisible = false
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
 
-local function createGUI(player)
+local function createGUI()
     local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "SymonHubGUI"
+    screenGui.Name = "InvisibilityGUI"
     screenGui.ResetOnSpawn = false
     screenGui.Parent = player.PlayerGui
 
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(0, 250, 0, 150)
-    frame.Position = UDim2.new(0.5, -125, 0.5, -75)
+    frame.Size = UDim2.new(0, 250, 0, 100)
+    frame.Position = UDim2.new(0.5, -125, 0.8, -50)
     frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
     frame.BorderSizePixel = 0
     frame.Parent = screenGui
 
-    local tokenLabel = Instance.new("TextLabel")
-    tokenLabel.Size = UDim2.new(1, 0, 0, 30)
-    tokenLabel.Position = UDim2.new(0, 0, 0, 0)
-    tokenLabel.Text = "Tokens: 0"
-    tokenLabel.TextColor3 = Color3.new(1, 1, 1)
-    tokenLabel.BackgroundTransparency = 1
-    tokenLabel.TextScaled = true
-    tokenLabel.Parent = frame
-
     local toggleButton = Instance.new("TextButton")
-    toggleButton.Size = UDim2.new(1, 0, 0, 40)
-    toggleButton.Position = UDim2.new(0, 0, 0, 40)
-    toggleButton.Text = "Start Token Generator"
+    toggleButton.Size = UDim2.new(1, 0, 1, 0)
+    toggleButton.Text = "Enable Invisibility"
     toggleButton.TextColor3 = Color3.new(1, 1, 1)
     toggleButton.BackgroundColor3 = Color3.fromRGB(30, 150, 30)
     toggleButton.Font = Enum.Font.SourceSansBold
@@ -43,43 +30,71 @@ local function createGUI(player)
     toggleButton.Parent = frame
 
     toggleButton.MouseButton1Click:Connect(function()
-        isTokenGeneratorActive = not isTokenGeneratorActive
-        if isTokenGeneratorActive then
-            toggleButton.Text = "Stop Token Generator"
+        isInvisible = not isInvisible
+        if isInvisible then
+            toggleButton.Text = "Disable Invisibility"
             toggleButton.BackgroundColor3 = Color3.fromRGB(150, 30, 30)
+
+            if character and character:FindFirstChild("Humanoid") then
+                local humanoid = character.Humanoid
+                humanoid.NameDisplayDistance = 0
+                humanoid.HealthDisplayDistance = 0
+            end
+            if character:FindFirstChild("Head") then
+                character.Head.Transparency = 1
+            end
+            for _, part in pairs(character:GetChildren()) do
+                if part:IsA("BasePart") then
+                    part.Transparency = 1
+                elseif part:IsA("Accessory") then
+                    part.Handle.Transparency = 1
+                end
+            end
         else
-            toggleButton.Text = "Start Token Generator"
+            toggleButton.Text = "Enable Invisibility"
             toggleButton.BackgroundColor3 = Color3.fromRGB(30, 150, 30)
-        end
-    end)
 
-    RunService.Heartbeat:Connect(function()
-        tokenLabel.Text = "Tokens: " .. tokens
-    end)
-end
-
-local function addTokens(player)
-    while true do
-        if isTokenGeneratorActive then
-            tokens = tokens + 100
-            if player:FindFirstChild("leaderstats") and player.leaderstats:FindFirstChild("Tokens") then
-                player.leaderstats.Tokens.Value = tokens
+            if character and character:FindFirstChild("Humanoid") then
+                local humanoid = character.Humanoid
+                humanoid.NameDisplayDistance = 100
+                humanoid.HealthDisplayDistance = 100
+            end
+            if character:FindFirstChild("Head") then
+                character.Head.Transparency = 0
+            end
+            for _, part in pairs(character:GetChildren()) do
+                if part:IsA("BasePart") then
+                    part.Transparency = 0
+                elseif part:IsA("Accessory") then
+                    part.Handle.Transparency = 0
+                end
             end
         end
-        wait(1)
-    end
+    end)
 end
 
-Players.PlayerAdded:Connect(function(player)
-    local leaderstats = Instance.new("Folder")
-    leaderstats.Name = "leaderstats"
-    leaderstats.Parent = player
+player.CharacterAdded:Connect(function(newCharacter)
+    character = newCharacter
+    if not isInvisible then
+        return
+    end
 
-    local tokensValue = Instance.new("IntValue")
-    tokensValue.Name = "Tokens"
-    tokensValue.Value = 0
-    tokensValue.Parent = leaderstats
-
-    createGUI(player)
-    coroutine.wrap(addTokens)(player)
+    wait(1)
+    if character:FindFirstChild("Humanoid") then
+        local humanoid = character.Humanoid
+        humanoid.NameDisplayDistance = 0
+        humanoid.HealthDisplayDistance = 0
+    end
+    if character:FindFirstChild("Head") then
+        character.Head.Transparency = 1
+    end
+    for _, part in pairs(character:GetChildren()) do
+        if part:IsA("BasePart") then
+            part.Transparency = 1
+        elseif part:IsA("Accessory") then
+            part.Handle.Transparency = 1
+        end
+    end
 end)
+
+createGUI()

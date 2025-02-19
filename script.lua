@@ -160,7 +160,7 @@ end
 local function createOpenButton(mainFrame)
     local openButton = Instance.new("TextButton")
     openButton.Size = UDim2.new(0, 50, 0, 20)
-    openButton.Position = UDim2.new(0, 10, 1, -30)
+    openButton.Position = UDim2.new(0, 10, 0, 10) -- Adjusted position (top-left corner)
     openButton.Text = "Open"
     openButton.TextColor3 = Color3.new(1, 1, 1)
     openButton.BackgroundColor3 = Color3.fromRGB(30, 150, 30)

@@ -77,6 +77,20 @@ local function createGUI()
             print("No Cooldown Enabled")
             -- Logic to remove cooldown
             warn("No Cooldown Activated!")
+            -- Example: Force continuous shooting (you need to adapt this to your game's weapon system)
+            spawn(function()
+                while noCooldownEnabled do
+                    -- Simulate firing continuously
+                    local tool = player.Character and player.Character:FindFirstChildOfClass("Tool")
+                    if tool then
+                        local remoteEvent = tool:FindFirstChild("RemoteEvent") -- Replace with the actual event name
+                        if remoteEvent then
+                            remoteEvent:FireServer() -- Fire the server event to simulate shooting
+                        end
+                    end
+                    wait(0.1) -- Adjust the delay as needed
+                end
+            end)
         else
             noCooldownButton.Text = "Enable No Cooldown"
             print("No Cooldown Disabled")
@@ -89,26 +103,40 @@ local function createGUI()
         if hitboxEnabled then
             hitboxButton.Text = "Disable Hitbox Expansion"
             print("Hitbox Expansion Enabled")
-            -- Logic to expand hitboxes
-            for _, plr in pairs(Players:GetPlayers()) do
-                local character = plr.Character
-                if character and character:FindFirstChild("HumanoidRootPart") then
-                    local rootPart = character.HumanoidRootPart
-                    rootPart.Size = Vector3.new(10, 10, 10) -- Increase hitbox size
-                    rootPart.Transparency = 0.5 -- Make it semi-transparent
-                    rootPart.BrickColor = BrickColor.new("Bright red") -- Change color for visibility
+            -- Enable noclip for all players except the local player
+            spawn(function()
+                while hitboxEnabled do
+                    for _, plr in pairs(Players:GetPlayers()) do
+                        if plr ~= player then
+                            local character = plr.Character
+                            if character and character:FindFirstChild("HumanoidRootPart") then
+                                local rootPart = character.HumanoidRootPart
+                                rootPart.Size = Vector3.new(10, 10, 10) -- Increase hitbox size
+                                rootPart.Transparency = 0.5 -- Make it semi-transparent
+                                rootPart.BrickColor = BrickColor.new("Bright red") -- Change color for visibility
+                                -- Apply noclip
+                                rootPart.CanCollide = false
+                                rootPart.Velocity = Vector3.new(0, 0, 0) -- Prevent falling
+                            end
+                        end
+                    end
+                    wait(0.1) -- Adjust the delay as needed
                 end
-            end
+            end)
         else
             hitboxButton.Text = "Enable Hitbox Expansion"
             print("Hitbox Expansion Disabled")
-            -- Reset hitboxes
+            -- Reset hitboxes and disable noclip
             for _, plr in pairs(Players:GetPlayers()) do
-                local character = plr.Character
-                if character and character:FindFirstChild("HumanoidRootPart") then
-                    local rootPart = character.HumanoidRootPart
-                    rootPart.Size = Vector3.new(2, 2, 1) -- Reset to default size
-                    rootPart.Transparency = 1 -- Reset transparency
+                if plr ~= player then
+                    local character = plr.Character
+                    if character and character:FindFirstChild("HumanoidRootPart") then
+                        local rootPart = character.HumanoidRootPart
+                        rootPart.Size = Vector3.new(2, 2, 1) -- Reset to default size
+                        rootPart.Transparency = 1 -- Reset transparency
+                        rootPart.BrickColor = BrickColor.new("Medium stone grey") -- Reset color
+                        rootPart.CanCollide = true -- Re-enable collisions
+                    end
                 end
             end
         end

@@ -1,12 +1,39 @@
--- Carregar a biblioteca Fluent e gerenciadores de add-ons
-local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
-local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
-local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
+-- Verifica se o HttpService está ativado
+if not game:GetService("HttpService") then
+    error("HttpService não está ativado. Ative-o nas configurações do jogo.")
+end
 
--- Criar a janela principal
+-- Função para carregar bibliotecas externas
+local function loadLibrary(url)
+    local success, response = pcall(function()
+        return loadstring(game:HttpGet(url))()
+    end)
+
+    if not success then
+        error("Erro ao carregar a biblioteca: " .. tostring(response))
+    end
+
+    return response
+end
+
+-- Carrega a biblioteca Fluent
+local Fluent
+pcall(function()
+    Fluent = loadLibrary("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua")
+end)
+
+if not Fluent then
+    error("Falha ao carregar a biblioteca Fluent. Verifique sua conexão ou o link da biblioteca.")
+end
+
+-- Carrega os addons da Fluent
+local SaveManager = loadLibrary("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua")
+local InterfaceManager = loadLibrary("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua")
+
+-- Cria a janela principal
 local Window = Fluent:CreateWindow({
-    Title = "ShadowHat v2.6",
-    SubTitle = "by Saymon Vieira",
+    Title = "ShadowHat v2.7",
+    SubTitle = "Criado por Saymon Vieira",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 460),
     Acrylic = true, -- Efeito de desfoque
@@ -14,7 +41,7 @@ local Window = Fluent:CreateWindow({
     MinimizeKey = Enum.KeyCode.LeftControl -- Tecla para minimizar
 })
 
--- Adicionar abas
+-- Adiciona abas
 local Tabs = {
     Main = Window:AddTab({ Title = "Main", Icon = "" }),
     Settings = Window:AddTab({ Title = "Settings", Icon = "settings" })
@@ -112,32 +139,9 @@ local function toggleInvisibility(enabled)
     end
 
     local character = LocalPlayer.Character
-    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-    local humanoid = character:FindFirstChild("Humanoid")
-
-    if enabled then
-        -- Desativa a hitbox e outras partes visíveis
-        for _, part in pairs(character:GetChildren()) do
-            if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
-                part.Transparency = 1 -- Torna todas as partes invisíveis
-            end
-        end
-
-        -- Remove a hitbox expandida, se existir
-        if character:FindFirstChild("Hitbox") then
-            character.Hitbox:Destroy()
-        end
-    else
-        -- Restaura a visibilidade das partes
-        for _, part in pairs(character:GetChildren()) do
-            if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
-                part.Transparency = 0 -- Restaura a transparência padrão
-            end
-        end
-
-        -- Recria a hitbox, se necessário
-        if HitboxEnabled then
-            createHitbox(LocalPlayer)
+    for _, part in pairs(character:GetChildren()) do
+        if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+            part.Transparency = enabled and 1 or 0
         end
     end
 end
@@ -146,30 +150,20 @@ end
 local noclipConnection = nil
 local function toggleNoclip(enabled)
     if enabled then
-        -- Habilita o Noclip
         noclipConnection = RunService.Stepped:Connect(function()
-            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            if LocalPlayer.Character then
                 for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
                     if part:IsA("BasePart") then
-                        part.CanCollide = false -- Desativa colisões
+                        part.CanCollide = false
                     end
                 end
             end
         end)
-        Fluent:Notify({
-            Title = "Noclip",
-            Content = "Noclip ativado!"
-        })
     else
-        -- Desativa o Noclip
         if noclipConnection then
             noclipConnection:Disconnect()
             noclipConnection = nil
         end
-        Fluent:Notify({
-            Title = "Noclip",
-            Content = "Noclip desativado!"
-        })
     end
 end
 
@@ -184,7 +178,6 @@ local function toggleFly(enabled)
     local humanoidRootPart = character.HumanoidRootPart
 
     if enabled then
-        -- Habilita o Fly
         local velocity = Vector3.new(0, 0, 0)
         flyConnection = RunService.RenderStepped:Connect(function()
             if FlyControls.Forward then
@@ -208,25 +201,16 @@ local function toggleFly(enabled)
 
             humanoidRootPart.Velocity = velocity
         end)
-        Fluent:Notify({
-            Title = "Fly",
-            Content = "Fly ativado!"
-        })
     else
-        -- Desativa o Fly
         if flyConnection then
             flyConnection:Disconnect()
             flyConnection = nil
         end
         humanoidRootPart.Velocity = Vector3.new(0, 0, 0)
-        Fluent:Notify({
-            Title = "Fly",
-            Content = "Fly desativado!"
-        })
     end
 end
 
--- Toggle para ativar/desativar ESP
+-- Adiciona toggles e botões na aba "Main"
 Tabs.Main:AddToggle("ESPEnabled", {
     Title = "Player ESP"
 }):OnChanged(function(Value)
@@ -240,7 +224,6 @@ Tabs.Main:AddToggle("ESPEnabled", {
     end
 end)
 
--- Toggle para ativar/desativar Hitbox
 Tabs.Main:AddToggle("HitboxEnabled", {
     Title = "Hitbox Expandida"
 }):OnChanged(function(Value)
@@ -258,7 +241,6 @@ Tabs.Main:AddToggle("HitboxEnabled", {
     end
 end)
 
--- Toggle para ativar/desativar Invisibilidade
 Tabs.Main:AddToggle("InvisibilityEnabled", {
     Title = "Invisibilidade"
 }):OnChanged(function(Value)
@@ -266,7 +248,6 @@ Tabs.Main:AddToggle("InvisibilityEnabled", {
     toggleInvisibility(InvisibilityEnabled)
 end)
 
--- Toggle para ativar/desativar Noclip
 Tabs.Main:AddToggle("NoclipEnabled", {
     Title = "Noclip"
 }):OnChanged(function(Value)
@@ -274,7 +255,27 @@ Tabs.Main:AddToggle("NoclipEnabled", {
     toggleNoclip(NoclipEnabled)
 end)
 
--- Toggle para ativar/desativar Fly
 Tabs.Main:AddToggle("FlyEnabled", {
     Title = "Fly"
 }):OnChanged(function(Value)
+    FlyEnabled = Value
+    toggleFly(FlyEnabled)
+end)
+
+Tabs.Main:AddSlider("FlySpeed", {
+    Title = "Velocidade do Fly",
+    Min = 10,
+    Max = 200,
+    Default = 50
+}):OnChanged(function(Value)
+    FlySpeed = Value
+end)
+
+-- Adiciona informações na aba "Settings"
+Tabs.Settings:AddParagraph("Sobre o Script", "ShadowHat foi criado por Saymon Vieira. Divirta-se explorando todas as funcionalidades deste script!")
+
+-- Finaliza a interface
+Fluent:Notify({
+    Title = "ShadowHat",
+    Content = "Script carregado com sucesso!"
+})

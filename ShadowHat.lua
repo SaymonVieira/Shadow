@@ -5,7 +5,7 @@ local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.
 
 -- Criar a janela principal
 local Window = Fluent:CreateWindow({
-    Title = "ShadowHat v2.5",
+    Title = "ShadowHat v2.6",
     SubTitle = "by Saymon Vieira",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 460),
@@ -278,48 +278,3 @@ end)
 Tabs.Main:AddToggle("FlyEnabled", {
     Title = "Fly"
 }):OnChanged(function(Value)
-    FlyEnabled = Value
-    toggleFly(FlyEnabled)
-end)
-
--- Slider para ajustar a velocidade do Fly
-Tabs.Main:AddSlider("FlySpeed", {
-    Title = "Velocidade do Fly",
-    Min = 10,
-    Max = 200,
-    Default = 50
-}):OnChanged(function(Value)
-    FlySpeed = Value
-end)
-
--- Botões do Fly GUI
-Tabs.Main:AddButton({
-    Title = "Ativar Fly GUI",
-    Callback = function()
-        -- Cria os controles do Fly GUI
-        FlyControls.Forward = false
-        FlyControls.Backward = false
-        FlyControls.Left = false
-        FlyControls.Right = false
-        FlyControls.Up = false
-        FlyControls.Down = false
-
-        -- Exibe os controles na tela
-        Fluent:Notify({
-            Title = "Fly GUI",
-            Content = "Controles de Fly ativados!"
-        })
-
-        -- Configura os controles para dispositivos móveis
-        UserInputService.InputBegan:Connect(function(input, gameProcessed)
-            if gameProcessed then
-                return
-            end
-
-            if input.KeyCode == Enum.KeyCode.W then
-                FlyControls.Forward = true
-            elseif input.KeyCode == Enum.KeyCode.S then
-                FlyControls.Backward = true
-            elseif input.KeyCode == Enum.KeyCode.A then
-                FlyControls.Left = true
-            elseif input

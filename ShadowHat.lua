@@ -32,7 +32,7 @@ local InterfaceManager = loadLibrary("https://raw.githubusercontent.com/dawid-sc
 
 -- Cria a janela principal
 local Window = Fluent:CreateWindow({
-    Title = "ShadowHat v3.0",
+    Title = "ShadowHat 🎩 v3.1", -- Adicionado o emoji de cartola
     SubTitle = "Criado por Saymon Vieira",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 460),
@@ -122,6 +122,27 @@ local function createHitbox(player)
     hitbox.Transparency = 0.5 -- Semi-transparente
     hitbox.Color3 = Color3.new(1, 0, 0) -- Cor vermelha
     hitbox.Parent = player.Character
+
+    -- Conecta o hitbox ao jogador para causar dano
+    local connection
+    connection = player.Character.HumanoidRootPart.Touched:Connect(function(hit)
+        if hit and hit.Parent and hit.Parent:IsA("Tool") then
+            local tool = hit.Parent
+            if tool:FindFirstChild("Handle") then
+                local humanoid = player.Character:FindFirstChild("Humanoid")
+                if humanoid then
+                    humanoid:TakeDamage(10) -- Dano ajustável
+                end
+            end
+        end
+    end)
+
+    -- Desconecta a conexão quando o hitbox é removido
+    hitbox.Destroying:Connect(function()
+        if connection then
+            connection:Disconnect()
+        end
+    end)
 end
 
 -- Função para remover Hitbox
@@ -304,10 +325,10 @@ Tabs.Main:AddToggle("AimbotEnabled", {
 end)
 
 -- Adiciona informações na aba "Settings"
-Tabs.Settings:AddParagraph("Sobre o Script", "ShadowHat foi criado por Saymon Vieira. Divirta-se explorando todas as funcionalidades deste script!")
+Tabs.Settings:AddParagraph("Sobre o Script", "ShadowHat 🎩 o melhor script universal é para jogos específicos, espero que se divirtam-se usando ele!!!")
 
 -- Finaliza a interface
 Fluent:Notify({
-    Title = "ShadowHat",
+    Title = "ShadowHat 🎩",
     Content = "Script carregado com sucesso!"
 })

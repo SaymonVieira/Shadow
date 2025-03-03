@@ -32,7 +32,7 @@ local InterfaceManager = loadLibrary("https://raw.githubusercontent.com/dawid-sc
 
 -- Cria a janela principal
 local Window = Fluent:CreateWindow({
-    Title = "ShadowHat 🎩 v3.1", -- Adicionado o emoji de cartola
+    Title = "ShadowHat 🎩 v3.2", -- Adicionado o emoji de cartola
     SubTitle = "Criado por Saymon Vieira",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 460),
@@ -103,7 +103,7 @@ end
 
 -- Função para criar Hitbox expandida
 local function createHitbox(player)
-    if not HitboxEnabled or not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
+    if not HitboxEnabled or not player.Character then
         return
     end
 
@@ -116,7 +116,7 @@ local function createHitbox(player)
     local hitbox = Instance.new("BoxHandleAdornment")
     hitbox.Name = "HitboxAdornment"
     hitbox.Size = Vector3.new(8, 10, 8) -- Tamanho maior (ajustável)
-    hitbox.Adornee = player.Character.HumanoidRootPart
+    hitbox.Adornee = player.Character:WaitForChild("HumanoidRootPart", 5) -- Espera o jogador renascer
     hitbox.AlwaysOnTop = true
     hitbox.ZIndex = 1
     hitbox.Transparency = 0.5 -- Semi-transparente
@@ -125,7 +125,7 @@ local function createHitbox(player)
 
     -- Conecta o hitbox ao jogador para causar dano
     local connection
-    connection = player.Character.HumanoidRootPart.Touched:Connect(function(hit)
+    connection = hitbox.Adornee.Touched:Connect(function(hit)
         if hit and hit.Parent and hit.Parent:IsA("Tool") then
             local tool = hit.Parent
             if tool:FindFirstChild("Handle") then
@@ -135,6 +135,12 @@ local function createHitbox(player)
                 end
             end
         end
+    end)
+
+    -- Reconecta o hitbox se o jogador renascer
+    player.CharacterAdded:Connect(function(newCharacter)
+        newCharacter:WaitForChild("HumanoidRootPart", 5)
+        hitbox.Adornee = newCharacter.HumanoidRootPart
     end)
 
     -- Desconecta a conexão quando o hitbox é removido
@@ -320,15 +326,4 @@ Tabs.Main:AddToggle("AimbotEnabled", {
 }):OnChanged(function(Value)
     AimbotEnabled = Value
     if AimbotEnabled then
-        RunService.RenderStepped:Connect(aimbot)
-    end
-end)
-
--- Adiciona informações na aba "Settings"
-Tabs.Settings:AddParagraph("Sobre o Script", "ShadowHat 🎩 o melhor script universal é para jogos específicos, espero que se divirtam-se usando ele!!!")
-
--- Finaliza a interface
-Fluent:Notify({
-    Title = "ShadowHat 🎩",
-    Content = "Script carregado com sucesso!"
-})
+        RunService.Render

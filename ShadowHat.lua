@@ -26,13 +26,9 @@ if not Fluent then
     error("Falha ao carregar a biblioteca Fluent. Verifique sua conexão ou o link da biblioteca.")
 end
 
--- Carrega os addons da Fluent
-local SaveManager = loadLibrary("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua")
-local InterfaceManager = loadLibrary("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua")
-
 -- Cria a janela principal
 local Window = Fluent:CreateWindow({
-    Title = "ShadowHat 🎩 v4.1",
+    Title = "ShadowHat 🎩 v4.3",
     SubTitle = "Criado por Saymon Vieira",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 460),
@@ -46,6 +42,8 @@ local Tabs = {
     Main = Window:AddTab({ Title = "Main", Icon = "" }),
     Combat = Window:AddTab({ Title = "Combat", Icon = "sword" }),
     AntiCheat = Window:AddTab({ Title = "Anti-Cheat", Icon = "shield" }),
+    Movement = Window:AddTab({ Title = "Movement", Icon = "run" }),
+    Performance = Window:AddTab({ Title = "Performance", Icon = "bolt" }),
     Settings = Window:AddTab({ Title = "Settings", Icon = "settings" })
 }
 
@@ -65,6 +63,10 @@ local NoclipEnabled = false
 local InvisibilityEnabled = false
 local AntiCheatBypassEnabled = false
 local HideNameEnabled = false
+local LowGraphicsEnabled = false
+local RemoveUnusedAssetsEnabled = false
+local DisableShadowsEnabled = false
+local CurrentTheme = "Dark"
 
 -- Função para desenhar caixas ESP
 local function drawESP(player)
@@ -269,6 +271,58 @@ local function hideName(enabled)
     end
 end
 
+-- Função para melhorar o desempenho
+local function optimizePerformance()
+    -- Desativa gráficos pesados
+    if LowGraphicsEnabled then
+        settings().Rendering.QualityLevel = "Level01" -- Define a qualidade gráfica mais baixa
+        for _, child in pairs(workspace:GetDescendants()) do
+            if child:IsA("BasePart") then
+                child.Material = Enum.Material.Plastic -- Altera materiais para algo mais leve
+            elseif child:IsA("Decal") or child:IsA("Texture") then
+                child:Destroy() -- Remove decalques e texturas
+            elseif child:IsA("ParticleEmitter") then
+                child.Enabled = false -- Desativa partículas
+            elseif child:IsA("Light") then
+                child.Enabled = false -- Desativa luzes
+            end
+        end
+    else
+        settings().Rendering.QualityLevel = "Level10" -- Restaura a qualidade gráfica padrão
+    end
+
+    -- Remove assets não utilizados
+    if RemoveUnusedAssetsEnabled then
+        for _, asset in pairs(workspace:GetDescendants()) do
+            if not asset:IsDescendantOf(LocalPlayer.Character) and asset:IsA("Model") then
+                asset:Destroy()
+            end
+        end
+    end
+
+    -- Desativa sombras
+    if DisableShadowsEnabled then
+        game.Lighting.GlobalShadows = false
+    else
+        game.Lighting.GlobalShadows = true
+    end
+end
+
+-- Função para alterar o tema
+local function changeTheme(theme)
+    if theme == "Dark" then
+        Window:SetTheme("Dark")
+    elseif theme == "Light" then
+        Window:SetTheme("Light")
+    elseif theme == "Custom" then
+        Window:SetTheme({
+            Accent = Color3.fromRGB(255, 0, 0), -- Vermelho
+            Background = Color3.fromRGB(30, 30, 30), -- Cinza escuro
+            TextColor = Color3.fromRGB(255, 255, 255) -- Branco
+        })
+    end
+end
+
 -- Adiciona toggles na aba "Combat"
 Tabs.Combat:AddToggle("ESPEnabled", {
     Title = "Player ESP"
@@ -292,4 +346,56 @@ Tabs.Combat:AddToggle("AimbotEnabled", {
     end
 end)
 
-Tabs.Combat:Add
+Tabs.Combat:AddToggle("HitboxEnabled", {
+    Title = "Hitbox Expandida"
+}):OnChanged(function(Value)
+    HitboxEnabled = Value
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            if HitboxEnabled then
+                createHitbox(player)
+            else
+                removeHitbox(player)
+            end
+        end
+    end
+end)
+
+Tabs.Combat:AddToggle("WallbangEnabled", {
+    Title = "Wallbang"
+}):OnChanged(function(Value)
+    WallbangEnabled = Value
+    enableWallbang(WallbangEnabled)
+end)
+
+Tabs.Combat:AddToggle("NoclipEnabled", {
+    Title = "Noclip"
+}):OnChanged(function(Value)
+    NoclipEnabled = Value
+    toggleNoclip(NoclipEnabled)
+end)
+
+Tabs.Combat:AddToggle("InvisibilityEnabled", {
+    Title = "Invisibilidade"
+}):OnChanged(function(Value)
+    InvisibilityEnabled = Value
+    toggleInvisibility(InvisibilityEnabled)
+end)
+
+-- Adiciona toggles na aba "Anti-Cheat"
+Tabs.AntiCheat:AddToggle("AntiCheatBypassEnabled", {
+    Title = "Anti-Cheat Bypass"
+}):OnChanged(function(Value)
+    AntiCheatBypassEnabled = Value
+    enableAntiCheatBypass(AntiCheatBypassEnabled)
+end)
+
+Tabs.AntiCheat:AddToggle("HideNameEnabled", {
+    Title = "Ocultar Nome"
+}):OnChanged(function(Value)
+    HideNameEnabled = Value
+    hideName(HideNameEnabled)
+end)
+
+-- Adiciona toggles na aba "Performance"
+Tabs.Performance:Add

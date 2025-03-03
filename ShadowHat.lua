@@ -32,7 +32,7 @@ local InterfaceManager = loadLibrary("https://raw.githubusercontent.com/dawid-sc
 
 -- Cria a janela principal
 local Window = Fluent:CreateWindow({
-    Title = "ShadowHat v2.8",
+    Title = "ShadowHat v2.9",
     SubTitle = "Criado por Saymon Vieira",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 460),
@@ -107,29 +107,28 @@ local function createHitbox(player)
         return
     end
 
-    -- Verifica se já existe uma hitbox para evitar duplicatas
-    if player.Character:FindFirstChild("Hitbox") then
-        player.Character.Hitbox:Destroy()
+    -- Remove hitbox existente
+    if player.Character:FindFirstChild("HitboxAdornment") then
+        player.Character.HitboxAdornment:Destroy()
     end
 
-    -- Cria a hitbox
-    local hitbox = Instance.new("Part")
-    hitbox.Name = "Hitbox"
+    -- Cria o hitbox usando BoxHandleAdornment
+    local hitbox = Instance.new("BoxHandleAdornment")
+    hitbox.Name = "HitboxAdornment"
     hitbox.Size = Vector3.new(6, 8, 6) -- Tamanho grande (ajustável)
-    hitbox.Anchored = false
-    hitbox.CanCollide = false -- Torna o hitbox atravessável
-    hitbox.Transparency = 0.7 -- Semi-transparente
-    hitbox.Color = Color3.new(1, 0, 0) -- Cor vermelha
+    hitbox.Adornee = player.Character.HumanoidRootPart
+    hitbox.AlwaysOnTop = true
+    hitbox.ZIndex = 1
+    hitbox.Transparency = 0.5 -- Semi-transparente
+    hitbox.Color3 = Color3.new(1, 0, 0) -- Cor vermelha
     hitbox.Parent = player.Character
+end
 
-    -- Centraliza a hitbox no jogador
-    local weld = Instance.new("WeldConstraint")
-    weld.Part0 = player.Character.HumanoidRootPart
-    weld.Part1 = hitbox
-    weld.Parent = hitbox
-
-    -- Ajusta a posição da hitbox para ficar dentro do jogador
-    hitbox.CFrame = player.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 0) -- Centralizado
+-- Função para remover Hitbox
+local function removeHitbox(player)
+    if player.Character and player.Character:FindFirstChild("HitboxAdornment") then
+        player.Character.HitboxAdornment:Destroy()
+    end
 end
 
 -- Função para tornar o jogador invisível
@@ -233,9 +232,7 @@ Tabs.Main:AddToggle("HitboxEnabled", {
             if HitboxEnabled then
                 createHitbox(player)
             else
-                if player.Character:FindFirstChild("Hitbox") then
-                    player.Character.Hitbox:Destroy()
-                end
+                removeHitbox(player)
             end
         end
     end

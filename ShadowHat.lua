@@ -32,7 +32,7 @@ local InterfaceManager = loadLibrary("https://raw.githubusercontent.com/dawid-sc
 
 -- Cria a janela principal
 local Window = Fluent:CreateWindow({
-    Title = "ShadowHat v2.9",
+    Title = "ShadowHat v3.0",
     SubTitle = "Criado por Saymon Vieira",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 460),
@@ -115,7 +115,7 @@ local function createHitbox(player)
     -- Cria o hitbox usando BoxHandleAdornment
     local hitbox = Instance.new("BoxHandleAdornment")
     hitbox.Name = "HitboxAdornment"
-    hitbox.Size = Vector3.new(6, 8, 6) -- Tamanho grande (ajustável)
+    hitbox.Size = Vector3.new(8, 10, 8) -- Tamanho maior (ajustável)
     hitbox.Adornee = player.Character.HumanoidRootPart
     hitbox.AlwaysOnTop = true
     hitbox.ZIndex = 1
@@ -128,6 +128,32 @@ end
 local function removeHitbox(player)
     if player.Character and player.Character:FindFirstChild("HitboxAdornment") then
         player.Character.HitboxAdornment:Destroy()
+    end
+end
+
+-- Função para Aimbot
+local function aimbot()
+    if not AimbotEnabled then
+        return
+    end
+
+    local closestPlayer = nil
+    local closestDistance = math.huge
+
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local target = player.Character.HumanoidRootPart
+            local distance = (target.Position - Camera.CFrame.Position).Magnitude
+
+            if distance < closestDistance then
+                closestPlayer = target
+                closestDistance = distance
+            end
+        end
+    end
+
+    if closestPlayer then
+        Camera.CFrame = CFrame.new(Camera.CFrame.Position, closestPlayer.Position)
     end
 end
 
@@ -266,6 +292,15 @@ Tabs.Main:AddSlider("FlySpeed", {
     Default = 50
 }):OnChanged(function(Value)
     FlySpeed = Value
+end)
+
+Tabs.Main:AddToggle("AimbotEnabled", {
+    Title = "Aimbot"
+}):OnChanged(function(Value)
+    AimbotEnabled = Value
+    if AimbotEnabled then
+        RunService.RenderStepped:Connect(aimbot)
+    end
 end)
 
 -- Adiciona informações na aba "Settings"

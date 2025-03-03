@@ -5,7 +5,7 @@ local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.
 
 -- Criar a janela principal
 local Window = Fluent:CreateWindow({
-    Title = "ShadowHat v2.0",
+    Title = "ShadowHat v2.1",
     SubTitle = "by Saymon Vieira",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 460),
@@ -30,6 +30,7 @@ local Camera = workspace.CurrentCamera
 local ESPEnabled = false
 local AimbotEnabled = false
 local HitboxEnabled = false
+local InvisibilityEnabled = false
 local AimbotSmoothness = 0.1 -- Suavidade do Aimbot (ajustável)
 
 -- Função para desenhar caixas ESP
@@ -70,7 +71,38 @@ local function drawESP(player)
     end)
 end
 
--- Função para ativar/desativar o ESP
+-- Função para criar Hitbox expandida
+local function createHitbox(player)
+    if not HitboxEnabled or not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
+        return
+    end
+
+    -- Verifica se já existe uma hitbox para evitar duplicatas
+    if player.Character:FindFirstChild("Hitbox") then
+        player.Character.Hitbox:Destroy()
+    end
+
+    -- Cria a hitbox
+    local hitbox = Instance.new("Part")
+    hitbox.Name = "Hitbox"
+    hitbox.Size = Vector3.new(6, 8, 6) -- Tamanho grande (ajustável)
+    hitbox.Anchored = false
+    hitbox.CanCollide = false
+    hitbox.Transparency = 0.7 -- Semi-transparente
+    hitbox.Color = Color3.new(1, 0, 0) -- Cor vermelha
+    hitbox.Parent = player.Character
+
+    -- Centraliza a hitbox no jogador
+    local weld = Instance.new("WeldConstraint")
+    weld.Part0 = player.Character.HumanoidRootPart
+    weld.Part1 = hitbox
+    weld.Parent = hitbox
+
+    -- Ajusta a posição da hitbox para ficar dentro do jogador
+    hitbox.CFrame = player.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 0) -- Centralizado
+end
+
+-- Toggle para ativar/desativar ESP
 Tabs.Main:AddToggle("ESPEnabled", {
     Title = "Player ESP"
 }):OnChanged(function(Value)
@@ -83,27 +115,6 @@ Tabs.Main:AddToggle("ESPEnabled", {
         end
     end
 end)
-
--- Função para criar Hitbox expandida
-local function createHitbox(player)
-    if not HitboxEnabled or not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
-        return
-    end
-
-    local hitbox = Instance.new("Part")
-    hitbox.Name = "Hitbox"
-    hitbox.Size = Vector3.new(6, 8, 6) -- Tamanho grande
-    hitbox.Anchored = false
-    hitbox.CanCollide = false
-    hitbox.Transparency = 0.7
-    hitbox.Color = Color3.new(1, 0, 0) -- Cor vermelha
-    hitbox.Parent = player.Character
-
-    local weld = Instance.new("WeldConstraint")
-    weld.Part0 = player.Character.HumanoidRootPart
-    weld.Part1 = hitbox
-    weld.Parent = hitbox
-end
 
 -- Toggle para ativar/desativar Hitbox
 Tabs.Main:AddToggle("HitboxEnabled", {
@@ -161,6 +172,51 @@ Tabs.Main:AddToggle("AimbotEnabled", {
     Title = "Aimbot"
 }):OnChanged(function(Value)
     AimbotEnabled = Value
+end)
+
+-- Função para tornar o jogador invisível
+local function toggleInvisibility(enabled)
+    if not LocalPlayer.Character then
+        return
+    end
+
+    local character = LocalPlayer.Character
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    local humanoid = character:FindFirstChild("Humanoid")
+
+    if enabled then
+        -- Desativa a hitbox e outras partes visíveis
+        for _, part in pairs(character:GetChildren()) do
+            if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+                part.Transparency = 1 -- Torna todas as partes invisíveis
+            end
+        end
+
+        -- Remove a hitbox expandida, se existir
+        if character:FindFirstChild("Hitbox") then
+            character.Hitbox:Destroy()
+        end
+    else
+        -- Restaura a visibilidade das partes
+        for _, part in pairs(character:GetChildren()) do
+            if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+                part.Transparency = 0 -- Restaura a transparência padrão
+            end
+        end
+
+        -- Recria a hitbox, se necessário
+        if HitboxEnabled then
+            createHitbox(LocalPlayer)
+        end
+    end
+end
+
+-- Toggle para ativar/desativar Invisibilidade
+Tabs.Main:AddToggle("InvisibilityEnabled", {
+    Title = "Invisibilidade"
+}):OnChanged(function(Value)
+    InvisibilityEnabled = Value
+    toggleInvisibility(InvisibilityEnabled)
 end)
 
 -- Loop para atualizar o Aimbot continuamente

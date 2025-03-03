@@ -5,7 +5,7 @@ local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.
 
 -- Criar a janela principal
 local Window = Fluent:CreateWindow({
-    Title = "ShadowHat v2.3",
+    Title = "ShadowHat v2.4",
     SubTitle = "by Saymon Vieira",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 460),
@@ -31,6 +31,7 @@ local AimbotEnabled = false
 local HitboxEnabled = false
 local InvisibilityEnabled = false
 local ShrinkEnabled = false
+local NoclipEnabled = false
 local AimbotSmoothness = 0.1 -- Suavidade do Aimbot (ajustável)
 
 -- Função para desenhar caixas ESP
@@ -187,6 +188,37 @@ local function toggleShrink(enabled)
     end
 end
 
+-- Função para Noclip
+local noclipConnection = nil
+local function toggleNoclip(enabled)
+    if enabled then
+        -- Habilita o Noclip
+        noclipConnection = RunService.Stepped:Connect(function()
+            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = false -- Desativa colisões
+                    end
+                end
+            end
+        end)
+        Fluent:Notify({
+            Title = "Noclip",
+            Content = "Noclip ativado!"
+        })
+    else
+        -- Desativa o Noclip
+        if noclipConnection then
+            noclipConnection:Disconnect()
+            noclipConnection = nil
+        end
+        Fluent:Notify({
+            Title = "Noclip",
+            Content = "Noclip desativado!"
+        })
+    end
+end
+
 -- Toggle para ativar/desativar ESP
 Tabs.Main:AddToggle("ESPEnabled", {
     Title = "Player ESP"
@@ -233,6 +265,14 @@ Tabs.Main:AddToggle("ShrinkEnabled", {
 }):OnChanged(function(Value)
     ShrinkEnabled = Value
     toggleShrink(ShrinkEnabled)
+end)
+
+-- Toggle para ativar/desativar Noclip
+Tabs.Main:AddToggle("NoclipEnabled", {
+    Title = "Noclip"
+}):OnChanged(function(Value)
+    NoclipEnabled = Value
+    toggleNoclip(NoclipEnabled)
 end)
 
 -- Integrar gerenciadores de add-ons

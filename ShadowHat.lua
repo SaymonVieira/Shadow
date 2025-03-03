@@ -32,7 +32,7 @@ local InterfaceManager = loadLibrary("https://raw.githubusercontent.com/dawid-sc
 
 -- Cria a janela principal
 local Window = Fluent:CreateWindow({
-    Title = "ShadowHat 🎩 v4.0",
+    Title = "ShadowHat 🎩 v4.1",
     SubTitle = "Criado por Saymon Vieira",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 460),
@@ -61,7 +61,10 @@ local ESPEnabled = false
 local AimbotEnabled = false
 local HitboxEnabled = false
 local WallbangEnabled = false
+local NoclipEnabled = false
+local InvisibilityEnabled = false
 local AntiCheatBypassEnabled = false
+local HideNameEnabled = false
 
 -- Função para desenhar caixas ESP
 local function drawESP(player)
@@ -184,6 +187,41 @@ local function aimbot()
     end
 end
 
+-- Função para Noclip
+local noclipConnection = nil
+local function toggleNoclip(enabled)
+    if enabled then
+        noclipConnection = RunService.Stepped:Connect(function()
+            if LocalPlayer.Character then
+                for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = false
+                    end
+                end
+            end
+        end)
+    else
+        if noclipConnection then
+            noclipConnection:Disconnect()
+            noclipConnection = nil
+        end
+    end
+end
+
+-- Função para Invisibilidade
+local function toggleInvisibility(enabled)
+    if not LocalPlayer.Character then
+        return
+    end
+
+    local character = LocalPlayer.Character
+    for _, part in pairs(character:GetChildren()) do
+        if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+            part.Transparency = enabled and 1 or 0
+        end
+    end
+end
+
 -- Função para Wallbang
 local function enableWallbang(enabled)
     if enabled then
@@ -220,6 +258,17 @@ local function enableAntiCheatBypass(enabled)
     end
 end
 
+-- Função para Ocultar Nome
+local function hideName(enabled)
+    if enabled then
+        LocalPlayer.Name = "Anonymous10101"
+        LocalPlayer.DisplayName = "Anonymous10101"
+    else
+        LocalPlayer.Name = LocalPlayer.Name -- Restaura o nome original
+        LocalPlayer.DisplayName = LocalPlayer.DisplayName -- Restaura o nome exibido
+    end
+end
+
 -- Adiciona toggles na aba "Combat"
 Tabs.Combat:AddToggle("ESPEnabled", {
     Title = "Player ESP"
@@ -243,41 +292,4 @@ Tabs.Combat:AddToggle("AimbotEnabled", {
     end
 end)
 
-Tabs.Combat:AddToggle("HitboxEnabled", {
-    Title = "Hitbox Expandida"
-}):OnChanged(function(Value)
-    HitboxEnabled = Value
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character then
-            if HitboxEnabled then
-                createHitbox(player)
-            else
-                removeHitbox(player)
-            end
-        end
-    end
-end)
-
-Tabs.Combat:AddToggle("WallbangEnabled", {
-    Title = "Wallbang"
-}):OnChanged(function(Value)
-    WallbangEnabled = Value
-    enableWallbang(WallbangEnabled)
-end)
-
--- Adiciona toggles na aba "Anti-Cheat"
-Tabs.AntiCheat:AddToggle("AntiCheatBypassEnabled", {
-    Title = "Anti-Cheat Bypass"
-}):OnChanged(function(Value)
-    AntiCheatBypassEnabled = Value
-    enableAntiCheatBypass(AntiCheatBypassEnabled)
-end)
-
--- Adiciona informações na aba "Settings"
-Tabs.Settings:AddParagraph("Sobre o Script", "ShadowHat 🎩 o melhor script universal é para jogos específicos, espero que se divirtam-se usando ele!!!")
-
--- Finaliza a interface
-Fluent:Notify({
-    Title = "ShadowHat 🎩",
-    Content = "Script carregado com sucesso!"
-})
+Tabs.Combat:Add

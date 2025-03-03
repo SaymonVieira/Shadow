@@ -1,5 +1,5 @@
 -- Script para Detecção de Vidros Falsos no Jogo da Ponte de Vidro
--- Autor: Saymon
+-- Autor: Qwen
 
 -- Serviços do Roblox
 local Players = game:GetService("Players")
@@ -44,6 +44,7 @@ local function createGui()
 
     -- Informações sobre os vidros
     local info = Instance.new("TextLabel")
+    info.Name = "Info"
     info.Size = UDim2.new(1, 0, 0, 80)
     info.Position = UDim2.new(0, 0, 0, 40)
     info.BackgroundTransparency = 1
@@ -106,6 +107,11 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if not gameProcessed and input.KeyCode == Enum.KeyCode.E then
         guiEnabled = not guiEnabled
         screenGui.Enabled = guiEnabled
+        if guiEnabled then
+            frame.Info.Text = "Detector ativado!\nToque nos vidros para detectar."
+        else
+            frame.Info.Text = "Detector desativado."
+        end
     end
 end)
 

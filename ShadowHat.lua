@@ -32,7 +32,7 @@ local InterfaceManager = loadLibrary("https://raw.githubusercontent.com/dawid-sc
 
 -- Cria a janela principal
 local Window = Fluent:CreateWindow({
-    Title = "ShadowHat 🎩 v3.2", -- Adicionado o emoji de cartola
+    Title = "ShadowHat 🎩 v4.0",
     SubTitle = "Criado por Saymon Vieira",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 460),
@@ -44,6 +44,8 @@ local Window = Fluent:CreateWindow({
 -- Adiciona abas
 local Tabs = {
     Main = Window:AddTab({ Title = "Main", Icon = "" }),
+    Combat = Window:AddTab({ Title = "Combat", Icon = "sword" }),
+    AntiCheat = Window:AddTab({ Title = "Anti-Cheat", Icon = "shield" }),
     Settings = Window:AddTab({ Title = "Settings", Icon = "settings" })
 }
 
@@ -54,14 +56,12 @@ local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
+-- Variáveis compartilhadas
 local ESPEnabled = false
 local AimbotEnabled = false
 local HitboxEnabled = false
-local InvisibilityEnabled = false
-local NoclipEnabled = false
-local FlyEnabled = false
-local FlySpeed = 50 -- Velocidade inicial do voo
-local FlyControls = {} -- Armazena os controles do Fly GUI
+local WallbangEnabled = false
+local AntiCheatBypassEnabled = false
 
 -- Função para desenhar caixas ESP
 local function drawESP(player)
@@ -184,86 +184,44 @@ local function aimbot()
     end
 end
 
--- Função para tornar o jogador invisível
-local function toggleInvisibility(enabled)
-    if not LocalPlayer.Character then
-        return
-    end
-
-    local character = LocalPlayer.Character
-    for _, part in pairs(character:GetChildren()) do
-        if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
-            part.Transparency = enabled and 1 or 0
-        end
-    end
-end
-
--- Função para Noclip
-local noclipConnection = nil
-local function toggleNoclip(enabled)
+-- Função para Wallbang
+local function enableWallbang(enabled)
     if enabled then
-        noclipConnection = RunService.Stepped:Connect(function()
-            if LocalPlayer.Character then
-                for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
-                    if part:IsA("BasePart") then
-                        part.CanCollide = false
-                    end
-                end
+        for _, part in pairs(workspace:GetDescendants()) do
+            if part:IsA("BasePart") and part.CanCollide then
+                part.CanCollide = false
             end
-        end)
+        end
     else
-        if noclipConnection then
-            noclipConnection:Disconnect()
-            noclipConnection = nil
+        for _, part in pairs(workspace:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = true
+            end
         end
     end
 end
 
--- Função para Fly GUI
-local flyConnection = nil
-local function toggleFly(enabled)
-    if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        return
-    end
-
-    local character = LocalPlayer.Character
-    local humanoidRootPart = character.HumanoidRootPart
-
+-- Função para Anti-Cheat Bypass
+local function enableAntiCheatBypass(enabled)
     if enabled then
-        local velocity = Vector3.new(0, 0, 0)
-        flyConnection = RunService.RenderStepped:Connect(function()
-            if FlyControls.Forward then
-                velocity = velocity + humanoidRootPart.CFrame.LookVector * FlySpeed
+        -- Exemplo básico de bypass (remover scripts de detecção)
+        for _, script in pairs(workspace:GetDescendants()) do
+            if script:IsA("Script") and script.Name == "AntiCheat" then
+                script.Disabled = true
             end
-            if FlyControls.Backward then
-                velocity = velocity - humanoidRootPart.CFrame.LookVector * FlySpeed
-            end
-            if FlyControls.Left then
-                velocity = velocity - humanoidRootPart.CFrame.RightVector * FlySpeed
-            end
-            if FlyControls.Right then
-                velocity = velocity + humanoidRootPart.CFrame.RightVector * FlySpeed
-            end
-            if FlyControls.Up then
-                velocity = velocity + Vector3.new(0, FlySpeed, 0)
-            end
-            if FlyControls.Down then
-                velocity = velocity - Vector3.new(0, FlySpeed, 0)
-            end
-
-            humanoidRootPart.Velocity = velocity
-        end)
-    else
-        if flyConnection then
-            flyConnection:Disconnect()
-            flyConnection = nil
         end
-        humanoidRootPart.Velocity = Vector3.new(0, 0, 0)
+    else
+        -- Reativa scripts desativados
+        for _, script in pairs(workspace:GetDescendants()) do
+            if script:IsA("Script") and script.Name == "AntiCheat" then
+                script.Disabled = false
+            end
+        end
     end
 end
 
--- Adiciona toggles e botões na aba "Main"
-Tabs.Main:AddToggle("ESPEnabled", {
+-- Adiciona toggles na aba "Combat"
+Tabs.Combat:AddToggle("ESPEnabled", {
     Title = "Player ESP"
 }):OnChanged(function(Value)
     ESPEnabled = Value
@@ -276,7 +234,16 @@ Tabs.Main:AddToggle("ESPEnabled", {
     end
 end)
 
-Tabs.Main:AddToggle("HitboxEnabled", {
+Tabs.Combat:AddToggle("AimbotEnabled", {
+    Title = "Aimbot"
+}):OnChanged(function(Value)
+    AimbotEnabled = Value
+    if AimbotEnabled then
+        RunService.RenderStepped:Connect(aimbot)
+    end
+end)
+
+Tabs.Combat:AddToggle("HitboxEnabled", {
     Title = "Hitbox Expandida"
 }):OnChanged(function(Value)
     HitboxEnabled = Value
@@ -291,39 +258,26 @@ Tabs.Main:AddToggle("HitboxEnabled", {
     end
 end)
 
-Tabs.Main:AddToggle("InvisibilityEnabled", {
-    Title = "Invisibilidade"
+Tabs.Combat:AddToggle("WallbangEnabled", {
+    Title = "Wallbang"
 }):OnChanged(function(Value)
-    InvisibilityEnabled = Value
-    toggleInvisibility(InvisibilityEnabled)
+    WallbangEnabled = Value
+    enableWallbang(WallbangEnabled)
 end)
 
-Tabs.Main:AddToggle("NoclipEnabled", {
-    Title = "Noclip"
+-- Adiciona toggles na aba "Anti-Cheat"
+Tabs.AntiCheat:AddToggle("AntiCheatBypassEnabled", {
+    Title = "Anti-Cheat Bypass"
 }):OnChanged(function(Value)
-    NoclipEnabled = Value
-    toggleNoclip(NoclipEnabled)
+    AntiCheatBypassEnabled = Value
+    enableAntiCheatBypass(AntiCheatBypassEnabled)
 end)
 
-Tabs.Main:AddToggle("FlyEnabled", {
-    Title = "Fly"
-}):OnChanged(function(Value)
-    FlyEnabled = Value
-    toggleFly(FlyEnabled)
-end)
+-- Adiciona informações na aba "Settings"
+Tabs.Settings:AddParagraph("Sobre o Script", "ShadowHat 🎩 o melhor script universal é para jogos específicos, espero que se divirtam-se usando ele!!!")
 
-Tabs.Main:AddSlider("FlySpeed", {
-    Title = "Velocidade do Fly",
-    Min = 10,
-    Max = 200,
-    Default = 50
-}):OnChanged(function(Value)
-    FlySpeed = Value
-end)
-
-Tabs.Main:AddToggle("AimbotEnabled", {
-    Title = "Aimbot"
-}):OnChanged(function(Value)
-    AimbotEnabled = Value
-    if AimbotEnabled then
-        RunService.Render
+-- Finaliza a interface
+Fluent:Notify({
+    Title = "ShadowHat 🎩",
+    Content = "Script carregado com sucesso!"
+})

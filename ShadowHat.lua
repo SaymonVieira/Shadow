@@ -32,7 +32,7 @@ local InterfaceManager = loadLibrary("https://raw.githubusercontent.com/dawid-sc
 
 -- Cria a janela principal
 local Window = Fluent:CreateWindow({
-    Title = "ShadowHat v2.7",
+    Title = "ShadowHat v2.8",
     SubTitle = "Criado por Saymon Vieira",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 460),
@@ -117,7 +117,7 @@ local function createHitbox(player)
     hitbox.Name = "Hitbox"
     hitbox.Size = Vector3.new(6, 8, 6) -- Tamanho grande (ajustável)
     hitbox.Anchored = false
-    hitbox.CanCollide = false
+    hitbox.CanCollide = false -- Torna o hitbox atravessável
     hitbox.Transparency = 0.7 -- Semi-transparente
     hitbox.Color = Color3.new(1, 0, 0) -- Cor vermelha
     hitbox.Parent = player.Character

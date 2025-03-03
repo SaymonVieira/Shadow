@@ -5,7 +5,7 @@ local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.
 
 -- Criar a janela principal
 local Window = Fluent:CreateWindow({
-    Title = "ShadowHat v1.0",
+    Title = "ShadowHat v2.0",
     SubTitle = "by Saymon Vieira",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 460),
@@ -23,51 +23,150 @@ local Tabs = {
 -- Variáveis globais
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
 local ESPEnabled = false
+local AimbotEnabled = false
+local HitboxEnabled = false
+local AimbotSmoothness = 0.1 -- Suavidade do Aimbot (ajustável)
 
--- Função para desenhar linhas ESP
-local function drawESP()
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            local rootPart = player.Character.HumanoidRootPart
-            local screenPosition, onScreen = workspace.CurrentCamera:WorldToScreenPoint(rootPart.Position)
+-- Função para desenhar caixas ESP
+local function drawESP(player)
+    local box = Drawing.new("Square")
+    local text = Drawing.new("Text")
 
-            if onScreen then
-                -- Desenhar uma linha fina na tela
-                local line = Drawing.new("Line")
-                line.Color = Color3.new(1, 1, 1) -- Cor branca
-                line.Thickness = 1 -- Linha fina
-                line.From = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y)
-                line.To = Vector2.new(screenPosition.X, screenPosition.Y)
-                line.Visible = ESPEnabled
+    RunService.RenderStepped:Connect(function()
+        if not ESPEnabled or not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
+            box.Visible = false
+            text.Visible = false
+            return
+        end
 
-                -- Remover a linha quando o jogador sair da tela
-                RunService.RenderStepped:Wait()
-                line:Remove()
+        local rootPart = player.Character.HumanoidRootPart
+        local screenPosition, onScreen = Camera:WorldToScreenPoint(rootPart.Position)
+
+        if onScreen then
+            local size = Vector3.new(4, 6, 0) -- Tamanho da hitbox
+            local top = Camera:WorldToScreenPoint((rootPart.CFrame * CFrame.new(0, size.Y / 2, 0)).Position)
+            local bottom = Camera:WorldToScreenPoint((rootPart.CFrame * CFrame.new(0, -size.Y / 2, 0)).Position)
+
+            box.Visible = true
+            box.Color = Color3.new(1, 1, 1) -- Cor branca
+            box.Thickness = 1
+            box.Size = Vector2.new(math.abs(top.X - bottom.X), math.abs(top.Y - bottom.Y))
+            box.Position = Vector2.new(top.X - box.Size.X / 2, top.Y)
+
+            text.Visible = true
+            text.Color = Color3.new(1, 1, 1) -- Cor branca
+            text.Size = 16
+            text.Position = Vector2.new(box.Position.X, box.Position.Y - 20)
+            text.Text = player.Name .. " [" .. math.floor((LocalPlayer.Character.HumanoidRootPart.Position - rootPart.Position).Magnitude) .. "m]"
+        else
+            box.Visible = false
+            text.Visible = false
+        end
+    end)
+end
+
+-- Função para ativar/desativar o ESP
+Tabs.Main:AddToggle("ESPEnabled", {
+    Title = "Player ESP"
+}):OnChanged(function(Value)
+    ESPEnabled = Value
+    if ESPEnabled then
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer then
+                drawESP(player)
             end
         end
     end
+end)
+
+-- Função para criar Hitbox expandida
+local function createHitbox(player)
+    if not HitboxEnabled or not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
+        return
+    end
+
+    local hitbox = Instance.new("Part")
+    hitbox.Name = "Hitbox"
+    hitbox.Size = Vector3.new(6, 8, 6) -- Tamanho grande
+    hitbox.Anchored = false
+    hitbox.CanCollide = false
+    hitbox.Transparency = 0.7
+    hitbox.Color = Color3.new(1, 0, 0) -- Cor vermelha
+    hitbox.Parent = player.Character
+
+    local weld = Instance.new("WeldConstraint")
+    weld.Part0 = player.Character.HumanoidRootPart
+    weld.Part1 = hitbox
+    weld.Parent = hitbox
 end
 
--- Toggle para ativar/desativar o ESP
-local ESPButton = Tabs.Main:AddToggle("ESPEnabled", {
-    Title = "Player ESP"
-})
-
-ESPButton:OnChanged(function(Value)
-    ESPEnabled = Value
-    if ESPEnabled then
-        print("ESP ativado!")
-    else
-        print("ESP desativado!")
+-- Toggle para ativar/desativar Hitbox
+Tabs.Main:AddToggle("HitboxEnabled", {
+    Title = "Hitbox Expandida"
+}):OnChanged(function(Value)
+    HitboxEnabled = Value
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            if HitboxEnabled then
+                createHitbox(player)
+            else
+                if player.Character:FindFirstChild("Hitbox") then
+                    player.Character.Hitbox:Destroy()
+                end
+            end
+        end
     end
 end)
 
--- Loop para atualizar o ESP continuamente
+-- Função para o Aimbot
+local function aimbot()
+    if not AimbotEnabled then
+        return
+    end
+
+    local closestPlayer = nil
+    local closestDistance = math.huge
+
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local target = player.Character.HumanoidRootPart
+            local distance = (target.Position - Camera.CFrame.Position).Magnitude
+
+            if distance < closestDistance then
+                closestPlayer = target
+                closestDistance = distance
+            end
+        end
+    end
+
+    if closestPlayer then
+        local targetPosition = closestPlayer.Position
+        local smoothness = AimbotSmoothness
+        local cameraCFrame = Camera.CFrame
+
+        local newLookVector = (targetPosition - cameraCFrame.Position).Unit
+        local newCFrame = CFrame.new(cameraCFrame.Position, cameraCFrame.Position + newLookVector)
+
+        Camera.CFrame = Camera.CFrame:Lerp(newCFrame, smoothness)
+    end
+end
+
+-- Toggle para ativar/desativar Aimbot
+Tabs.Main:AddToggle("AimbotEnabled", {
+    Title = "Aimbot"
+}):OnChanged(function(Value)
+    AimbotEnabled = Value
+end)
+
+-- Loop para atualizar o Aimbot continuamente
 RunService.RenderStepped:Connect(function()
-    if ESPEnabled then
-        drawESP()
+    if AimbotEnabled then
+        aimbot()
     end
 end)
 
@@ -79,5 +178,5 @@ InterfaceManager:SetLibrary(Fluent)
 Window:SelectTab(1) -- Seleciona a aba "Main"
 Fluent:Notify({
     Title = "ShadowHat",
-    Content = "Script carregado com sucesso!"
+    Content = "Update carregado com sucesso!"
 })

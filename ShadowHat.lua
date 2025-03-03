@@ -28,7 +28,7 @@ end
 
 -- Cria a janela principal
 local Window = Fluent:CreateWindow({
-    Title = "ShadowHat 🎩 v4.3",
+    Title = "ShadowHat 🎩 Premium v6.0",
     SubTitle = "Criado por Saymon Vieira",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 460),
@@ -42,8 +42,8 @@ local Tabs = {
     Main = Window:AddTab({ Title = "Main", Icon = "" }),
     Combat = Window:AddTab({ Title = "Combat", Icon = "sword" }),
     AntiCheat = Window:AddTab({ Title = "Anti-Cheat", Icon = "shield" }),
-    Movement = Window:AddTab({ Title = "Movement", Icon = "run" }),
     Performance = Window:AddTab({ Title = "Performance", Icon = "bolt" }),
+    Brookhaven = Window:AddTab({ Title = "Brookhaven", Icon = "game" }),
     Settings = Window:AddTab({ Title = "Settings", Icon = "settings" })
 }
 
@@ -323,6 +323,103 @@ local function changeTheme(theme)
     end
 end
 
+-- Função para teleportar todos os jogadores
+local function teleportAllPlayers(position)
+    for _, player in pairs(Players:GetPlayers()) do
+        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            player.Character.HumanoidRootPart.CFrame = CFrame.new(position)
+        end
+    end
+end
+
+-- Função para remover veículos
+local function removeVehicles(enabled)
+    if enabled then
+        for _, vehicle in pairs(workspace:GetDescendants()) do
+            if vehicle:IsA("Model") and vehicle:FindFirstChild("VehicleSeat") then
+                vehicle:Destroy()
+            end
+        end
+    end
+end
+
+-- Função para spawnar itens aleatórios
+local function spawnRandomItem(itemType, position)
+    local item = Instance.new("Part")
+    item.Name = itemType
+    item.Size = Vector3.new(5, 5, 5)
+    item.Position = position or LocalPlayer.Character.HumanoidRootPart.Position
+    item.Anchored = true
+    item.Parent = workspace
+end
+
+-- Função para congelar jogadores
+local function freezePlayers(enabled)
+    for _, player in pairs(Players:GetPlayers()) do
+        if player.Character and player.Character:FindFirstChild("Humanoid") then
+            player.Character.Humanoid.PlatformStand = enabled
+        end
+    end
+end
+
+-- Função para alterar céu e iluminação
+local function changeSkyAndLighting(theme)
+    if theme == "Night" then
+        game.Lighting.ClockTime = 0
+        game.Lighting.Ambient = Color3.fromRGB(50, 50, 50)
+    elseif theme == "Aurora" then
+        game.Lighting.Sky.SkyboxBk = "rbxassetid://7018684002"
+        game.Lighting.Sky.SkyboxDn = "rbxassetid://7018684002"
+        game.Lighting.Sky.SkyboxFt = "rbxassetid://7018684002"
+        game.Lighting.Sky.SkyboxLf = "rbxassetid://7018684002"
+        game.Lighting.Sky.SkyboxRt = "rbxassetid://7018684002"
+        game.Lighting.Sky.SkyboxUp = "rbxassetid://7018684002"
+    elseif theme == "Storm" then
+        game.Lighting.FogEnd = 100
+        game.Lighting.FogColor = Color3.fromRGB(25, 25, 25)
+        game.Lighting.Brightness = 0.5
+    end
+end
+
+-- Função para criar barreiras invisíveis
+local function createInvisibleBarrier(position)
+    local barrier = Instance.new("Part")
+    barrier.Size = Vector3.new(10, 10, 10)
+    barrier.Position = position
+    barrier.Transparency = 1
+    barrier.Anchored = true
+    barrier.CanCollide = true
+    barrier.Parent = workspace
+end
+
+-- Função para spawnar NPCs personalizados
+local function spawnCustomNPC(modelId, position)
+    local npc = game:GetService("InsertService"):LoadAsset(modelId)
+    npc.Parent = workspace
+    npc.PrimaryPart.CFrame = CFrame.new(position or LocalPlayer.Character.HumanoidRootPart.Position)
+end
+
+-- Função para alterar gravidade
+local function changeGravity(gravity)
+    workspace.Gravity = gravity
+end
+
+-- Função para causar explosões
+local function createExplosion(position, size)
+    local explosion = Instance.new("Explosion")
+    explosion.Position = position or LocalPlayer.Character.HumanoidRootPart.Position
+    explosion.BlastRadius = size
+    explosion.BlastPressure = 500000
+    explosion.Parent = workspace
+end
+
+-- Função para alterar nomes dos jogadores
+local function changePlayerNames(newName)
+    for _, player in pairs(Players:GetPlayers()) do
+        player.DisplayName = newName
+    end
+end
+
 -- Adiciona toggles na aba "Combat"
 Tabs.Combat:AddToggle("ESPEnabled", {
     Title = "Player ESP"
@@ -398,4 +495,75 @@ Tabs.AntiCheat:AddToggle("HideNameEnabled", {
 end)
 
 -- Adiciona toggles na aba "Performance"
-Tabs.Performance:Add
+Tabs.Performance:AddToggle("LowGraphicsEnabled", {
+    Title = "Gráficos Leves"
+}):OnChanged(function(Value)
+    LowGraphicsEnabled = Value
+    optimizePerformance()
+end)
+
+Tabs.Performance:AddToggle("RemoveUnusedAssetsEnabled", {
+    Title = "Remover Assets Não Usados"
+}):OnChanged(function(Value)
+    RemoveUnusedAssetsEnabled = Value
+    optimizePerformance()
+end)
+
+Tabs.Performance:AddToggle("DisableShadowsEnabled", {
+    Title = "Desativar Sombras"
+}):OnChanged(function(Value)
+    DisableShadowsEnabled = Value
+    optimizePerformance()
+end)
+
+-- Adiciona opções na aba "Brookhaven"
+Tabs.Brookhaven:AddButton("Teleportar Todos os Jogadores", function()
+    teleportAllPlayers(Vector3.new(0, 100, 0)) -- Exemplo: Teleporta para o topo
+end)
+
+Tabs.Brookhaven:AddToggle("Remover Veículos", {
+    Title = "Remover Veículos"
+}):OnChanged(function(Value)
+    removeVehicles(Value)
+end)
+
+Tabs.Brookhaven:AddDropdown("Spawnar Itens", {
+    Title = "Spawnar Itens",
+    Values = { "Dinheiro", "Arma", "Objeto Aleatório" },
+    Default = "Dinheiro"
+}):OnChanged(function(Value)
+    spawnRandomItem(Value, LocalPlayer.Character.HumanoidRootPart.Position)
+end)
+
+Tabs.Brookhaven:AddToggle("Congelar Jogadores", {
+    Title = "Congelar Jogadores"
+}):OnChanged(function(Value)
+    freezePlayers(Value)
+end)
+
+Tabs.Brookhaven:AddDropdown("Alterar Céu e Iluminação", {
+    Title = "Alterar Céu e Iluminação",
+    Values = { "Noite", "Aurora", "Tempestade" },
+    Default = "Noite"
+}):OnChanged(function(Value)
+    changeSkyAndLighting(Value)
+end)
+
+Tabs.Brookhaven:AddButton("Criar Barreira Invisível", function()
+    createInvisibleBarrier(LocalPlayer.Character.HumanoidRootPart.Position + Vector3.new(0, 5, 0))
+end)
+
+Tabs.Brookhaven:AddButton("Spawnar NPC Personalizado", function()
+    spawnCustomNPC(123456789, LocalPlayer.Character.HumanoidRootPart.Position + Vector3.new(0, 5, 0)) -- Substitua pelo ID do modelo
+end)
+
+Tabs.Brookhaven:AddSlider("Alterar Gravidade", {
+    Title = "Gravidade",
+    Min = 0,
+    Max = 500,
+    Default = 196.2
+}):OnChanged(function(Value)
+    changeGravity(Value)
+end)
+
+Tabs.Brookhaven:AddButton("Causar

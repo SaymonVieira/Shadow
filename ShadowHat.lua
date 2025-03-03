@@ -5,7 +5,7 @@ local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.
 
 -- Criar a janela principal
 local Window = Fluent:CreateWindow({
-    Title = "ShadowHat v2.1",
+    Title = "ShadowHat v2.2",
     SubTitle = "by Saymon Vieira",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 460),
@@ -32,6 +32,41 @@ local AimbotEnabled = false
 local HitboxEnabled = false
 local InvisibilityEnabled = false
 local AimbotSmoothness = 0.1 -- Suavidade do Aimbot (ajustável)
+
+-- Variáveis para armazenar a localização salva
+local SavedLocation = nil
+
+-- Função para salvar a localização atual
+local function saveLocation()
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        SavedLocation = LocalPlayer.Character.HumanoidRootPart.CFrame
+        Fluent:Notify({
+            Title = "Localização Salva",
+            Content = "Sua posição foi salva com sucesso!"
+        })
+    else
+        Fluent:Notify({
+            Title = "Erro",
+            Content = "Não foi possível salvar sua posição."
+        })
+    end
+end
+
+-- Função para teletransportar o jogador para a localização salva
+local function teleportToSavedLocation()
+    if SavedLocation and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        LocalPlayer.Character.HumanoidRootPart.CFrame = SavedLocation
+        Fluent:Notify({
+            Title = "Teletransporte",
+            Content = "Você foi teletransportado para a posição salva!"
+        })
+    else
+        Fluent:Notify({
+            Title = "Erro",
+            Content = "Nenhuma posição salva encontrada."
+        })
+    end
+end
 
 -- Função para desenhar caixas ESP
 local function drawESP(player)
@@ -163,76 +198,4 @@ local function aimbot()
         local newLookVector = (targetPosition - cameraCFrame.Position).Unit
         local newCFrame = CFrame.new(cameraCFrame.Position, cameraCFrame.Position + newLookVector)
 
-        Camera.CFrame = Camera.CFrame:Lerp(newCFrame, smoothness)
-    end
-end
-
--- Toggle para ativar/desativar Aimbot
-Tabs.Main:AddToggle("AimbotEnabled", {
-    Title = "Aimbot"
-}):OnChanged(function(Value)
-    AimbotEnabled = Value
-end)
-
--- Função para tornar o jogador invisível
-local function toggleInvisibility(enabled)
-    if not LocalPlayer.Character then
-        return
-    end
-
-    local character = LocalPlayer.Character
-    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-    local humanoid = character:FindFirstChild("Humanoid")
-
-    if enabled then
-        -- Desativa a hitbox e outras partes visíveis
-        for _, part in pairs(character:GetChildren()) do
-            if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
-                part.Transparency = 1 -- Torna todas as partes invisíveis
-            end
-        end
-
-        -- Remove a hitbox expandida, se existir
-        if character:FindFirstChild("Hitbox") then
-            character.Hitbox:Destroy()
-        end
-    else
-        -- Restaura a visibilidade das partes
-        for _, part in pairs(character:GetChildren()) do
-            if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
-                part.Transparency = 0 -- Restaura a transparência padrão
-            end
-        end
-
-        -- Recria a hitbox, se necessário
-        if HitboxEnabled then
-            createHitbox(LocalPlayer)
-        end
-    end
-end
-
--- Toggle para ativar/desativar Invisibilidade
-Tabs.Main:AddToggle("InvisibilityEnabled", {
-    Title = "Invisibilidade"
-}):OnChanged(function(Value)
-    InvisibilityEnabled = Value
-    toggleInvisibility(InvisibilityEnabled)
-end)
-
--- Loop para atualizar o Aimbot continuamente
-RunService.RenderStepped:Connect(function()
-    if AimbotEnabled then
-        aimbot()
-    end
-end)
-
--- Integrar gerenciadores de add-ons
-SaveManager:SetLibrary(Fluent)
-InterfaceManager:SetLibrary(Fluent)
-
--- Finalizar
-Window:SelectTab(1) -- Seleciona a aba "Main"
-Fluent:Notify({
-    Title = "ShadowHat",
-    Content = "Update carregado com sucesso!"
-})
+        Camera.CFrame =

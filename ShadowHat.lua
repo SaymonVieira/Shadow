@@ -5,7 +5,7 @@ local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.
 
 -- Criar a janela principal
 local Window = Fluent:CreateWindow({
-    Title = "ShadowHat v2.2",
+    Title = "ShadowHat v2.3",
     SubTitle = "by Saymon Vieira",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 460),
@@ -23,7 +23,6 @@ local Tabs = {
 -- Variáveis globais
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
@@ -31,42 +30,8 @@ local ESPEnabled = false
 local AimbotEnabled = false
 local HitboxEnabled = false
 local InvisibilityEnabled = false
+local ShrinkEnabled = false
 local AimbotSmoothness = 0.1 -- Suavidade do Aimbot (ajustável)
-
--- Variáveis para armazenar a localização salva
-local SavedLocation = nil
-
--- Função para salvar a localização atual
-local function saveLocation()
-    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        SavedLocation = LocalPlayer.Character.HumanoidRootPart.CFrame
-        Fluent:Notify({
-            Title = "Localização Salva",
-            Content = "Sua posição foi salva com sucesso!"
-        })
-    else
-        Fluent:Notify({
-            Title = "Erro",
-            Content = "Não foi possível salvar sua posição."
-        })
-    end
-end
-
--- Função para teletransportar o jogador para a localização salva
-local function teleportToSavedLocation()
-    if SavedLocation and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        LocalPlayer.Character.HumanoidRootPart.CFrame = SavedLocation
-        Fluent:Notify({
-            Title = "Teletransporte",
-            Content = "Você foi teletransportado para a posição salva!"
-        })
-    else
-        Fluent:Notify({
-            Title = "Erro",
-            Content = "Nenhuma posição salva encontrada."
-        })
-    end
-end
 
 -- Função para desenhar caixas ESP
 local function drawESP(player)
@@ -137,6 +102,91 @@ local function createHitbox(player)
     hitbox.CFrame = player.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 0) -- Centralizado
 end
 
+-- Função para tornar o jogador invisível
+local function toggleInvisibility(enabled)
+    if not LocalPlayer.Character then
+        return
+    end
+
+    local character = LocalPlayer.Character
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    local humanoid = character:FindFirstChild("Humanoid")
+
+    if enabled then
+        -- Desativa a hitbox e outras partes visíveis
+        for _, part in pairs(character:GetChildren()) do
+            if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+                part.Transparency = 1 -- Torna todas as partes invisíveis
+            end
+        end
+
+        -- Remove a hitbox expandida, se existir
+        if character:FindFirstChild("Hitbox") then
+            character.Hitbox:Destroy()
+        end
+    else
+        -- Restaura a visibilidade das partes
+        for _, part in pairs(character:GetChildren()) do
+            if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+                part.Transparency = 0 -- Restaura a transparência padrão
+            end
+        end
+
+        -- Recria a hitbox, se necessário
+        if HitboxEnabled then
+            createHitbox(LocalPlayer)
+        end
+    end
+end
+
+-- Função para encolher o jogador
+local function toggleShrink(enabled)
+    if not LocalPlayer.Character then
+        return
+    end
+
+    local character = LocalPlayer.Character
+    local humanoid = character:FindFirstChild("Humanoid")
+
+    if enabled then
+        -- Reduz o tamanho do jogador e seus itens
+        for _, part in pairs(character:GetChildren()) do
+            if part:IsA("BasePart") then
+                part.Size = part.Size / 3 -- Reduz o tamanho para 1/3
+                part.CFrame = part.CFrame * CFrame.new(0, -3, 0) -- Ajusta a posição para não flutuar
+            elseif part:IsA("Accessory") then
+                for _, child in pairs(part:GetChildren()) do
+                    if child:IsA("BasePart") then
+                        child.Size = child.Size / 3 -- Reduz o tamanho dos acessórios
+                    end
+                end
+            end
+        end
+
+        if humanoid then
+            humanoid.HipHeight = humanoid.HipHeight / 3 -- Ajusta a altura do jogador
+        end
+    else
+        -- Restaura o tamanho original do jogador e seus itens
+        for _, part in pairs(character:GetChildren()) do
+            if part:IsA("BasePart") then
+                part.Size = part.Size * 3 -- Retorna ao tamanho original
+                part.CFrame = part.CFrame * CFrame.new(0, 3, 0) -- Ajusta a posição novamente
+            elseif part:IsA("Accessory") then
+                for _, child in pairs(part:GetChildren()) do
+                    if child:IsA("BasePart") then
+                        child.Size = child.Size * 3 -- Retorna ao tamanho original dos acessórios
+                    end
+                end
+            end
+        end
+
+        if humanoid then
+            humanoid.HipHeight = humanoid.HipHeight * 3 -- Restaura a altura original
+        end
+    end
+end
+
 -- Toggle para ativar/desativar ESP
 Tabs.Main:AddToggle("ESPEnabled", {
     Title = "Player ESP"
@@ -169,33 +219,29 @@ Tabs.Main:AddToggle("HitboxEnabled", {
     end
 end)
 
--- Função para o Aimbot
-local function aimbot()
-    if not AimbotEnabled then
-        return
-    end
+-- Toggle para ativar/desativar Invisibilidade
+Tabs.Main:AddToggle("InvisibilityEnabled", {
+    Title = "Invisibilidade"
+}):OnChanged(function(Value)
+    InvisibilityEnabled = Value
+    toggleInvisibility(InvisibilityEnabled)
+end)
 
-    local closestPlayer = nil
-    local closestDistance = math.huge
+-- Toggle para ativar/desativar Encolher Jogador
+Tabs.Main:AddToggle("ShrinkEnabled", {
+    Title = "Encolher Jogador"
+}):OnChanged(function(Value)
+    ShrinkEnabled = Value
+    toggleShrink(ShrinkEnabled)
+end)
 
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            local target = player.Character.HumanoidRootPart
-            local distance = (target.Position - Camera.CFrame.Position).Magnitude
+-- Integrar gerenciadores de add-ons
+SaveManager:SetLibrary(Fluent)
+InterfaceManager:SetLibrary(Fluent)
 
-            if distance < closestDistance then
-                closestPlayer = target
-                closestDistance = distance
-            end
-        end
-    end
-
-    if closestPlayer then
-        local targetPosition = closestPlayer.Position
-        local smoothness = AimbotSmoothness
-        local cameraCFrame = Camera.CFrame
-
-        local newLookVector = (targetPosition - cameraCFrame.Position).Unit
-        local newCFrame = CFrame.new(cameraCFrame.Position, cameraCFrame.Position + newLookVector)
-
-        Camera.CFrame =
+-- Finalizar
+Window:SelectTab(1) -- Seleciona a aba "Main"
+Fluent:Notify({
+    Title = "ShadowHat",
+    Content = "Update carregado com sucesso!"
+})

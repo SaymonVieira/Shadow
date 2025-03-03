@@ -5,7 +5,7 @@ local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.
 
 -- Criar a janela principal
 local Window = Fluent:CreateWindow({
-    Title = "ShadowHat v2.4",
+    Title = "ShadowHat v2.5",
     SubTitle = "by Saymon Vieira",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 460),
@@ -23,6 +23,7 @@ local Tabs = {
 -- Variáveis globais
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
@@ -30,9 +31,10 @@ local ESPEnabled = false
 local AimbotEnabled = false
 local HitboxEnabled = false
 local InvisibilityEnabled = false
-local ShrinkEnabled = false
 local NoclipEnabled = false
-local AimbotSmoothness = 0.1 -- Suavidade do Aimbot (ajustável)
+local FlyEnabled = false
+local FlySpeed = 50 -- Velocidade inicial do voo
+local FlyControls = {} -- Armazena os controles do Fly GUI
 
 -- Função para desenhar caixas ESP
 local function drawESP(player)
@@ -140,54 +142,6 @@ local function toggleInvisibility(enabled)
     end
 end
 
--- Função para encolher o jogador
-local function toggleShrink(enabled)
-    if not LocalPlayer.Character then
-        return
-    end
-
-    local character = LocalPlayer.Character
-    local humanoid = character:FindFirstChild("Humanoid")
-
-    if enabled then
-        -- Reduz o tamanho do jogador e seus itens
-        for _, part in pairs(character:GetChildren()) do
-            if part:IsA("BasePart") then
-                part.Size = part.Size / 3 -- Reduz o tamanho para 1/3
-                part.CFrame = part.CFrame * CFrame.new(0, -3, 0) -- Ajusta a posição para não flutuar
-            elseif part:IsA("Accessory") then
-                for _, child in pairs(part:GetChildren()) do
-                    if child:IsA("BasePart") then
-                        child.Size = child.Size / 3 -- Reduz o tamanho dos acessórios
-                    end
-                end
-            end
-        end
-
-        if humanoid then
-            humanoid.HipHeight = humanoid.HipHeight / 3 -- Ajusta a altura do jogador
-        end
-    else
-        -- Restaura o tamanho original do jogador e seus itens
-        for _, part in pairs(character:GetChildren()) do
-            if part:IsA("BasePart") then
-                part.Size = part.Size * 3 -- Retorna ao tamanho original
-                part.CFrame = part.CFrame * CFrame.new(0, 3, 0) -- Ajusta a posição novamente
-            elseif part:IsA("Accessory") then
-                for _, child in pairs(part:GetChildren()) do
-                    if child:IsA("BasePart") then
-                        child.Size = child.Size * 3 -- Retorna ao tamanho original dos acessórios
-                    end
-                end
-            end
-        end
-
-        if humanoid then
-            humanoid.HipHeight = humanoid.HipHeight * 3 -- Restaura a altura original
-        end
-    end
-end
-
 -- Função para Noclip
 local noclipConnection = nil
 local function toggleNoclip(enabled)
@@ -215,6 +169,59 @@ local function toggleNoclip(enabled)
         Fluent:Notify({
             Title = "Noclip",
             Content = "Noclip desativado!"
+        })
+    end
+end
+
+-- Função para Fly GUI
+local flyConnection = nil
+local function toggleFly(enabled)
+    if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        return
+    end
+
+    local character = LocalPlayer.Character
+    local humanoidRootPart = character.HumanoidRootPart
+
+    if enabled then
+        -- Habilita o Fly
+        local velocity = Vector3.new(0, 0, 0)
+        flyConnection = RunService.RenderStepped:Connect(function()
+            if FlyControls.Forward then
+                velocity = velocity + humanoidRootPart.CFrame.LookVector * FlySpeed
+            end
+            if FlyControls.Backward then
+                velocity = velocity - humanoidRootPart.CFrame.LookVector * FlySpeed
+            end
+            if FlyControls.Left then
+                velocity = velocity - humanoidRootPart.CFrame.RightVector * FlySpeed
+            end
+            if FlyControls.Right then
+                velocity = velocity + humanoidRootPart.CFrame.RightVector * FlySpeed
+            end
+            if FlyControls.Up then
+                velocity = velocity + Vector3.new(0, FlySpeed, 0)
+            end
+            if FlyControls.Down then
+                velocity = velocity - Vector3.new(0, FlySpeed, 0)
+            end
+
+            humanoidRootPart.Velocity = velocity
+        end)
+        Fluent:Notify({
+            Title = "Fly",
+            Content = "Fly ativado!"
+        })
+    else
+        -- Desativa o Fly
+        if flyConnection then
+            flyConnection:Disconnect()
+            flyConnection = nil
+        end
+        humanoidRootPart.Velocity = Vector3.new(0, 0, 0)
+        Fluent:Notify({
+            Title = "Fly",
+            Content = "Fly desativado!"
         })
     end
 end
@@ -259,14 +266,6 @@ Tabs.Main:AddToggle("InvisibilityEnabled", {
     toggleInvisibility(InvisibilityEnabled)
 end)
 
--- Toggle para ativar/desativar Encolher Jogador
-Tabs.Main:AddToggle("ShrinkEnabled", {
-    Title = "Encolher Jogador"
-}):OnChanged(function(Value)
-    ShrinkEnabled = Value
-    toggleShrink(ShrinkEnabled)
-end)
-
 -- Toggle para ativar/desativar Noclip
 Tabs.Main:AddToggle("NoclipEnabled", {
     Title = "Noclip"
@@ -275,13 +274,52 @@ Tabs.Main:AddToggle("NoclipEnabled", {
     toggleNoclip(NoclipEnabled)
 end)
 
--- Integrar gerenciadores de add-ons
-SaveManager:SetLibrary(Fluent)
-InterfaceManager:SetLibrary(Fluent)
+-- Toggle para ativar/desativar Fly
+Tabs.Main:AddToggle("FlyEnabled", {
+    Title = "Fly"
+}):OnChanged(function(Value)
+    FlyEnabled = Value
+    toggleFly(FlyEnabled)
+end)
 
--- Finalizar
-Window:SelectTab(1) -- Seleciona a aba "Main"
-Fluent:Notify({
-    Title = "ShadowHat",
-    Content = "Update carregado com sucesso!"
-})
+-- Slider para ajustar a velocidade do Fly
+Tabs.Main:AddSlider("FlySpeed", {
+    Title = "Velocidade do Fly",
+    Min = 10,
+    Max = 200,
+    Default = 50
+}):OnChanged(function(Value)
+    FlySpeed = Value
+end)
+
+-- Botões do Fly GUI
+Tabs.Main:AddButton({
+    Title = "Ativar Fly GUI",
+    Callback = function()
+        -- Cria os controles do Fly GUI
+        FlyControls.Forward = false
+        FlyControls.Backward = false
+        FlyControls.Left = false
+        FlyControls.Right = false
+        FlyControls.Up = false
+        FlyControls.Down = false
+
+        -- Exibe os controles na tela
+        Fluent:Notify({
+            Title = "Fly GUI",
+            Content = "Controles de Fly ativados!"
+        })
+
+        -- Configura os controles para dispositivos móveis
+        UserInputService.InputBegan:Connect(function(input, gameProcessed)
+            if gameProcessed then
+                return
+            end
+
+            if input.KeyCode == Enum.KeyCode.W then
+                FlyControls.Forward = true
+            elseif input.KeyCode == Enum.KeyCode.S then
+                FlyControls.Backward = true
+            elseif input.KeyCode == Enum.KeyCode.A then
+                FlyControls.Left = true
+            elseif input

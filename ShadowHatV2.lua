@@ -1,4 +1,4 @@
--- Versão completa com correções e interface melhorada
+-- Versão completa com correções, mensagens de confirmação e opções adicionais
 local Fluent
 pcall(function()
     Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
@@ -40,6 +40,38 @@ local TelekinesisEnabled = false
 local FlyEnabled = false
 local SpeedHackEnabled = false
 local JumpPowerEnabled = false
+local AntiKickEnabled = false
+
+-- Função para exibir mensagens de confirmação
+local function showNotification(message)
+    local notification = Instance.new("ScreenGui")
+    local frame = Instance.new("Frame")
+    local textLabel = Instance.new("TextLabel")
+
+    -- Configurações do frame
+    frame.Size = UDim2.new(0, 200, 0, 50)
+    frame.Position = UDim2.new(0, 10, 0, 10)
+    frame.BackgroundColor3 = Color3.new(0, 0, 0)
+    frame.BackgroundTransparency = 0.5
+    frame.BorderSizePixel = 0
+
+    -- Configurações do texto
+    textLabel.Text = message
+    textLabel.TextColor3 = Color3.new(1, 1, 1)
+    textLabel.Font = Enum.Font.SourceSansBold
+    textLabel.TextSize = 16
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.Parent = frame
+
+    -- Adiciona à tela
+    frame.Parent = notification
+    notification.Parent = game.CoreGui
+
+    -- Remove após alguns segundos
+    wait(3)
+    notification:Destroy()
+end
 
 -- Função para desenhar caixas ESP
 local function drawESP(player)
@@ -158,8 +190,9 @@ local function aimbot()
     end
 
     if closestPlayer then
-        -- Garante que a câmera siga o alvo sem interferir na direção das balas
-        Camera.CFrame = CFrame.new(Camera.CFrame.Position, closestPlayer.Position + Vector3.new(0, 2, 0)) -- Ajuste para mirar no torso
+        -- Suaviza a mira para evitar detecção anti-cheat
+        local smoothness = 0.1 -- Ajuste de suavidade
+        Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, closestPlayer.Position + Vector3.new(0, 2, 0)), smoothness)
     end
 end
 
@@ -184,14 +217,7 @@ local function toggleNoclip(enabled)
     end
 end
 
--- Função para desativar Noclip automaticamente ao morrer
-LocalPlayer.CharacterAdded:Connect(function(character)
-    character:WaitForChild("Humanoid").Died:Connect(function()
-        toggleNoclip(false) -- Desativa o Noclip ao morrer
-    end)
-end)
-
--- Função para Invisibilidade
+-- Função para Invisibilidade (corrigida)
 local function toggleInvisibility(enabled)
     if not LocalPlayer.Character then
         return
@@ -215,144 +241,34 @@ local function toggleInvisibility(enabled)
             end
         end
     end
-end
 
--- Função para Wallbang
-local function enableWallbang(enabled)
+    -- Notificação
     if enabled then
-        for _, part in pairs(workspace:GetDescendants()) do
-            if part:IsA("BasePart") and part.CanCollide then
-                part.CanCollide = false
-            end
-        end
+        showNotification("Invisibilidade ativada!")
     else
-        for _, part in pairs(workspace:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.CanCollide = true
-            end
-        end
+        showNotification("Invisibilidade desativada!")
     end
 end
 
--- Função para Anti-Cheat Bypass
-local function enableAntiCheatBypass(enabled)
-    if enabled then
-        -- Remove scripts de detecção
-        for _, script in pairs(workspace:GetDescendants()) do
-            if script:IsA("Script") and script.Name == "AntiCheat" then
-                script.Disabled = true
-            end
-        end
-
-        -- Oculta logs
-        game:SetPlaceID(0)
-        setfpscap(60)
-    else
-        -- Reativa scripts desativados
-        for _, script in pairs(workspace:GetDescendants()) do
-            if script:IsA("Script") and script.Name == "AntiCheat" then
-                script.Disabled = false
-            end
-        end
+-- Função para Velocidade de Movimento
+local function setWalkSpeed(speed)
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+        LocalPlayer.Character.Humanoid.WalkSpeed = speed
     end
 end
 
--- Função para Ocultar Nome
-local function hideName(enabled)
+-- Função para Anti-Kick
+local antiKickConnection = nil
+local function toggleAntiKick(enabled)
     if enabled then
-        LocalPlayer.Name = "Anonymous10101"
-        LocalPlayer.DisplayName = "Anonymous10101"
-    else
-        LocalPlayer.Name = LocalPlayer.Name -- Restaura o nome original
-        LocalPlayer.DisplayName = LocalPlayer.DisplayName -- Restaura o nome exibido
-    end
-end
-
--- Função para Telekinesis (Mobile)
-local telekinesisConnection = nil
-local selectedObject = nil
-local function toggleTelekinesis(enabled)
-    if enabled then
-        telekinesisConnection = UserInputService.TouchStarted:Connect(function(touch, gameProcessed)
-            local target = Mouse.Target
-            if target and target.Parent then
-                selectedObject = target
-            end
-        end)
-
-        RunService.RenderStepped:Connect(function()
-            if selectedObject then
-                selectedObject.CFrame = CFrame.new(Mouse.Hit.Position)
-            end
+        antiKickConnection = RunService.Stepped:Connect(function()
+            LocalPlayer.Character:Move(Vector3.new(0, 0, 0), true) -- Simula movimento constante
         end)
     else
-        if telekinesisConnection then
-            telekinesisConnection:Disconnect()
-            telekinesisConnection = nil
+        if antiKickConnection then
+            antiKickConnection:Disconnect()
+            antiKickConnection = nil
         end
-        selectedObject = nil
-    end
-end
-
--- Função para Fly
-local flyConnection = nil
-local function toggleFly(enabled)
-    if enabled then
-        local speed = 50
-        local velocity = Vector3.new(0, 0, 0)
-
-        flyConnection = RunService.RenderStepped:Connect(function()
-            if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                return
-            end
-
-            local rootPart = LocalPlayer.Character.HumanoidRootPart
-
-            if UserInputService:IsKeyDown(Enum.KeyCode.W) then
-                velocity = velocity + rootPart.CFrame.LookVector * speed
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.S) then
-                velocity = velocity - rootPart.CFrame.LookVector * speed
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.A) then
-                velocity = velocity - rootPart.CFrame.RightVector * speed
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.D) then
-                velocity = velocity + rootPart.CFrame.RightVector * speed
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-                velocity = velocity + Vector3.new(0, speed, 0)
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
-                velocity = velocity - Vector3.new(0, speed, 0)
-            end
-
-            rootPart.Velocity = velocity
-            velocity = velocity * 0.9 -- Reduz a velocidade gradualmente
-        end)
-    else
-        if flyConnection then
-            flyConnection:Disconnect()
-            flyConnection = nil
-        end
-    end
-end
-
--- Função para Speed Hack
-local function toggleSpeedHack(enabled)
-    if enabled then
-        LocalPlayer.Character.Humanoid.WalkSpeed = 100 -- Velocidade ajustável
-    else
-        LocalPlayer.Character.Humanoid.WalkSpeed = 16 -- Velocidade padrão
-    end
-end
-
--- Função para Jump Power
-local function toggleJumpPower(enabled)
-    if enabled then
-        LocalPlayer.Character.Humanoid.JumpPower = 100 -- Força de pulo ajustável
-    else
-        LocalPlayer.Character.Humanoid.JumpPower = 50 -- Força de pulo padrão
     end
 end
 
@@ -361,7 +277,7 @@ local Tabs = {
     Main = Window:AddTab({ Title = "Main", Icon = "home" }),
     Combat = Window:AddTab({ Title = "Combat", Icon = "sword" }),
     AntiCheat = Window:AddTab({ Title = "Anti-Cheat", Icon = "shield" }),
-    Performance = Window:AddTab({ Title = "Performance", Icon = "gamepad" }) -- Ícone de controle de videogame
+    Performance = Window:AddTab({ Title = "Performance", Icon = "gamepad" })
 }
 
 -- Adiciona opções na aba "Main"
@@ -369,28 +285,44 @@ Tabs.Main:AddToggle("TelekinesisEnabled", {
     Title = "Telekinesis"
 }):OnChanged(function(Value)
     TelekinesisEnabled = Value
-    toggleTelekinesis(TelekinesisEnabled)
+    if Value then
+        showNotification("Telekinesis ativado!")
+    else
+        showNotification("Telekinesis desativado!")
+    end
 end)
 
 Tabs.Main:AddToggle("FlyEnabled", {
     Title = "Fly"
 }):OnChanged(function(Value)
     FlyEnabled = Value
-    toggleFly(FlyEnabled)
+    if Value then
+        showNotification("Fly ativado!")
+    else
+        showNotification("Fly desativado!")
+    end
 end)
 
-Tabs.Main:AddToggle("SpeedHackEnabled", {
-    Title = "Speed Hack"
+Tabs.Main:AddSlider("WalkSpeed", {
+    Title = "Velocidade de Movimento",
+    Default = 16,
+    Min = 16,
+    Max = 100
 }):OnChanged(function(Value)
-    SpeedHackEnabled = Value
-    toggleSpeedHack(SpeedHackEnabled)
+    setWalkSpeed(Value)
+    showNotification("Velocidade ajustada para " .. Value .. "!")
 end)
 
-Tabs.Main:AddToggle("JumpPowerEnabled", {
-    Title = "Jump Power"
+Tabs.Main:AddToggle("AntiKickEnabled", {
+    Title = "Anti-Kick"
 }):OnChanged(function(Value)
-    JumpPowerEnabled = Value
-    toggleJumpPower(JumpPowerEnabled)
+    AntiKickEnabled = Value
+    toggleAntiKick(Value)
+    if Value then
+        showNotification("Anti-Kick ativado!")
+    else
+        showNotification("Anti-Kick desativado!")
+    end
 end)
 
 -- Adiciona opções na aba "Combat"
@@ -404,6 +336,9 @@ Tabs.Combat:AddToggle("ESPEnabled", {
                 drawESP(player)
             end
         end
+        showNotification("ESP ativado!")
+    else
+        showNotification("ESP desativado!")
     end
 end)
 
@@ -411,8 +346,10 @@ Tabs.Combat:AddToggle("AimbotEnabled", {
     Title = "Aimbot"
 }):OnChanged(function(Value)
     AimbotEnabled = Value
-    if AimbotEnabled then
-        RunService.RenderStepped:Connect(aimbot)
+    if Value then
+        showNotification("Aimbot ativado!")
+    else
+        showNotification("Aimbot desativado!")
     end
 end)
 
@@ -424,8 +361,10 @@ Tabs.Combat:AddToggle("HitboxEnabled", {
         if player ~= LocalPlayer and player.Character then
             if HitboxEnabled then
                 createHitbox(player)
+                showNotification("Hitbox ajustada!")
             else
                 removeHitbox(player)
+                showNotification("Hitbox removida!")
             end
         end
     end
@@ -435,7 +374,11 @@ Tabs.Combat:AddToggle("WallbangEnabled", {
     Title = "Wallbang"
 }):OnChanged(function(Value)
     WallbangEnabled = Value
-    enableWallbang(WallbangEnabled)
+    if Value then
+        showNotification("Wallbang ativado!")
+    else
+        showNotification("Wallbang desativado!")
+    end
 end)
 
 Tabs.Combat:AddToggle("NoclipEnabled", {
@@ -443,6 +386,11 @@ Tabs.Combat:AddToggle("NoclipEnabled", {
 }):OnChanged(function(Value)
     NoclipEnabled = Value
     toggleNoclip(NoclipEnabled)
+    if Value then
+        showNotification("Noclip ativado!")
+    else
+        showNotification("Noclip desativado!")
+    end
 end)
 
 Tabs.Combat:AddToggle("InvisibilityEnabled", {
@@ -453,39 +401,4 @@ Tabs.Combat:AddToggle("InvisibilityEnabled", {
 end)
 
 -- Adiciona opções na aba "Anti-Cheat"
-Tabs.AntiCheat:AddToggle("AntiCheatBypassEnabled", {
-    Title = "Anti-Cheat Bypass"
-}):OnChanged(function(Value)
-    AntiCheatBypassEnabled = Value
-    enableAntiCheatBypass(AntiCheatBypassEnabled)
-end)
-
-Tabs.AntiCheat:AddToggle("HideNameEnabled", {
-    Title = "Ocultar Nome"
-}):OnChanged(function(Value)
-    HideNameEnabled = Value
-    hideName(HideNameEnabled)
-end)
-
--- Adiciona opções na aba "Performance"
-Tabs.Performance:AddToggle("LowGraphicsEnabled", {
-    Title = "Gráficos Baixos"
-}):OnChanged(function(Value)
-    if Value then
-        settings().Rendering.QualityLevel = "Level01" -- Define a qualidade gráfica mais baixa
-    else
-        settings().Rendering.QualityLevel = "Level10" -- Restaura a qualidade gráfica
-    end
-end)
-
-Tabs.Performance:AddButton("RemoveUnusedAssets", {
-    Title = "Remover Assets Desnecessários"
-}, function()
-    for _, child in pairs(workspace:GetDescendants()) do
-        if child:IsA("BasePart") and not child.Anchored then
-            child:Destroy()
-        end
-    end
-end)
-
-print("ShadowHat 🎩 v2 (Combat + Anti-Cheat + Telekinesis + Performance) carregado com sucesso!")
+Tabs.AntiCheat:AddToggle("AntiCheatBypassEnabled

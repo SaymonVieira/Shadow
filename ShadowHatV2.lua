@@ -1,4 +1,4 @@
--- Versão mínima + Módulo de Combat
+-- Versão mínima + Módulo de Combat completo
 local Fluent
 pcall(function()
     Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
@@ -22,12 +22,17 @@ local Window = Fluent:CreateWindow({
 -- Variáveis globais
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
 -- Variáveis compartilhadas
 local ESPEnabled = false
 local AimbotEnabled = false
+local HitboxEnabled = false
+local WallbangEnabled = false
+local NoclipEnabled = false
+local InvisibilityEnabled = false
 
 -- Função para desenhar caixas ESP
 local function drawESP(player)
@@ -67,6 +72,63 @@ local function drawESP(player)
     end)
 end
 
+-- Função para criar Hitbox expandida
+local function createHitbox(player)
+    if not HitboxEnabled or not player.Character then
+        return
+    end
+
+    -- Remove hitbox existente
+    if player.Character:FindFirstChild("HitboxAdornment") then
+        player.Character.HitboxAdornment:Destroy()
+    end
+
+    -- Cria o hitbox usando BoxHandleAdornment
+    local hitbox = Instance.new("BoxHandleAdornment")
+    hitbox.Name = "HitboxAdornment"
+    hitbox.Size = Vector3.new(8, 10, 8) -- Tamanho maior (ajustável)
+    hitbox.Adornee = player.Character:WaitForChild("HumanoidRootPart", 5) -- Espera o jogador renascer
+    hitbox.AlwaysOnTop = true
+    hitbox.ZIndex = 1
+    hitbox.Transparency = 0.5 -- Semi-transparente
+    hitbox.Color3 = Color3.new(1, 0, 0) -- Cor vermelha
+    hitbox.Parent = player.Character
+
+    -- Conecta o hitbox ao jogador para causar dano
+    local connection
+    connection = hitbox.Adornee.Touched:Connect(function(hit)
+        if hit and hit.Parent and hit.Parent:IsA("Tool") then
+            local tool = hit.Parent
+            if tool:FindFirstChild("Handle") then
+                local humanoid = player.Character:FindFirstChild("Humanoid")
+                if humanoid then
+                    humanoid:TakeDamage(10) -- Dano ajustável
+                end
+            end
+        end
+    end)
+
+    -- Reconecta o hitbox se o jogador renascer
+    player.CharacterAdded:Connect(function(newCharacter)
+        newCharacter:WaitForChild("HumanoidRootPart", 5)
+        hitbox.Adornee = newCharacter.HumanoidRootPart
+    end)
+
+    -- Desconecta a conexão quando o hitbox é removido
+    hitbox.Destroying:Connect(function()
+        if connection then
+            connection:Disconnect()
+        end
+    end)
+end
+
+-- Função para remover Hitbox
+local function removeHitbox(player)
+    if player.Character and player.Character:FindFirstChild("HitboxAdornment") then
+        player.Character.HitboxAdornment:Destroy()
+    end
+end
+
 -- Função para Aimbot
 local function aimbot()
     if not AimbotEnabled then
@@ -93,10 +155,63 @@ local function aimbot()
     end
 end
 
+-- Função para Noclip
+local noclipConnection = nil
+local function toggleNoclip(enabled)
+    if enabled then
+        noclipConnection = RunService.Stepped:Connect(function()
+            if LocalPlayer.Character then
+                for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = false
+                    end
+                end
+            end
+        end)
+    else
+        if noclipConnection then
+            noclipConnection:Disconnect()
+            noclipConnection = nil
+        end
+    end
+end
+
+-- Função para Invisibilidade
+local function toggleInvisibility(enabled)
+    if not LocalPlayer.Character then
+        return
+    end
+
+    local character = LocalPlayer.Character
+    for _, part in pairs(character:GetChildren()) do
+        if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+            part.Transparency = enabled and 1 or 0
+        end
+    end
+end
+
+-- Função para Wallbang
+local function enableWallbang(enabled)
+    if enabled then
+        for _, part in pairs(workspace:GetDescendants()) do
+            if part:IsA("BasePart") and part.CanCollide then
+                part.CanCollide = false
+            end
+        end
+    else
+        for _, part in pairs(workspace:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = true
+            end
+        end
+    end
+end
+
 -- Adiciona abas
 local Tabs = {
     Main = Window:AddTab({ Title = "Main", Icon = "" }),
-    Combat = Window:AddTab({ Title = "Combat", Icon = "sword" })
+    Combat = Window:AddTab({ Title = "Combat", Icon = "sword" }),
+    AntiCheat = Window:AddTab({ Title = "Anti-Cheat", Icon = "shield" })
 }
 
 -- Adiciona opções na aba "Combat"
@@ -122,4 +237,40 @@ Tabs.Combat:AddToggle("AimbotEnabled", {
     end
 end)
 
-print("ShadowHat 🎩 v2 (Combat) carregado com sucesso!")
+Tabs.Combat:AddToggle("HitboxEnabled", {
+    Title = "Hitbox Expandida"
+}):OnChanged(function(Value)
+    HitboxEnabled = Value
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            if HitboxEnabled then
+                createHitbox(player)
+            else
+                removeHitbox(player)
+            end
+        end
+    end
+end)
+
+Tabs.Combat:AddToggle("WallbangEnabled", {
+    Title = "Wallbang"
+}):OnChanged(function(Value)
+    WallbangEnabled = Value
+    enableWallbang(WallbangEnabled)
+end)
+
+Tabs.Combat:AddToggle("NoclipEnabled", {
+    Title = "Noclip"
+}):OnChanged(function(Value)
+    NoclipEnabled = Value
+    toggleNoclip(NoclipEnabled)
+end)
+
+Tabs.Combat:AddToggle("InvisibilityEnabled", {
+    Title = "Invisibilidade"
+}):OnChanged(function(Value)
+    InvisibilityEnabled = Value
+    toggleInvisibility(InvisibilityEnabled)
+end)
+
+print("ShadowHat 🎩 v2 (Combat completo) carregado com sucesso!")

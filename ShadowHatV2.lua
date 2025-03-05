@@ -25,6 +25,7 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
+local Mouse = LocalPlayer:GetMouse()
 
 -- Variáveis compartilhadas
 local ESPEnabled = false
@@ -36,6 +37,9 @@ local InvisibilityEnabled = false
 local AntiCheatBypassEnabled = false
 local HideNameEnabled = false
 local TelekinesisEnabled = false
+local FlyEnabled = false
+local SpeedHackEnabled = false
+local JumpPowerEnabled = false
 
 -- Função para desenhar caixas ESP
 local function drawESP(player)
@@ -195,6 +199,12 @@ local function toggleInvisibility(enabled)
                     accessoryPart.Transparency = enabled and 1 or 0
                 end
             end
+        elseif part:IsA("Tool") then
+            for _, toolPart in pairs(part:GetChildren()) do
+                if toolPart:IsA("BasePart") then
+                    toolPart.Transparency = enabled and 1 or 0
+                end
+            end
         end
     end
 end
@@ -250,17 +260,15 @@ local function hideName(enabled)
     end
 end
 
--- Função para Telekinesis
+-- Função para Telekinesis (Mobile)
 local telekinesisConnection = nil
 local selectedObject = nil
 local function toggleTelekinesis(enabled)
     if enabled then
-        telekinesisConnection = UserInputService.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                local target = Mouse.Target
-                if target and target.Parent then
-                    selectedObject = target
-                end
+        telekinesisConnection = UserInputService.TouchStarted:Connect(function(touch, gameProcessed)
+            local target = Mouse.Target
+            if target and target.Parent then
+                selectedObject = target
             end
         end)
 
@@ -278,11 +286,74 @@ local function toggleTelekinesis(enabled)
     end
 end
 
+-- Função para Fly
+local flyConnection = nil
+local function toggleFly(enabled)
+    if enabled then
+        local speed = 50
+        local velocity = Vector3.new(0, 0, 0)
+
+        flyConnection = RunService.RenderStepped:Connect(function()
+            if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                return
+            end
+
+            local rootPart = LocalPlayer.Character.HumanoidRootPart
+
+            if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+                velocity = velocity + rootPart.CFrame.LookVector * speed
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+                velocity = velocity - rootPart.CFrame.LookVector * speed
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+                velocity = velocity - rootPart.CFrame.RightVector * speed
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+                velocity = velocity + rootPart.CFrame.RightVector * speed
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+                velocity = velocity + Vector3.new(0, speed, 0)
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+                velocity = velocity - Vector3.new(0, speed, 0)
+            end
+
+            rootPart.Velocity = velocity
+            velocity = velocity * 0.9 -- Reduz a velocidade gradualmente
+        end)
+    else
+        if flyConnection then
+            flyConnection:Disconnect()
+            flyConnection = nil
+        end
+    end
+end
+
+-- Função para Speed Hack
+local function toggleSpeedHack(enabled)
+    if enabled then
+        LocalPlayer.Character.Humanoid.WalkSpeed = 100 -- Velocidade ajustável
+    else
+        LocalPlayer.Character.Humanoid.WalkSpeed = 16 -- Velocidade padrão
+    end
+end
+
+-- Função para Jump Power
+local function toggleJumpPower(enabled)
+    if enabled then
+        LocalPlayer.Character.Humanoid.JumpPower = 100 -- Força de pulo ajustável
+    else
+        LocalPlayer.Character.Humanoid.JumpPower = 50 -- Força de pulo padrão
+    end
+end
+
 -- Adiciona abas
 local Tabs = {
     Main = Window:AddTab({ Title = "Main", Icon = "" }),
     Combat = Window:AddTab({ Title = "Combat", Icon = "sword" }),
-    AntiCheat = Window:AddTab({ Title = "Anti-Cheat", Icon = "shield" })
+    AntiCheat = Window:AddTab({ Title = "Anti-Cheat", Icon = "shield" }),
+    Performance = Window:AddTab({ Title = "Performance", Icon = "bolt" })
 }
 
 -- Adiciona opções na aba "Main"
@@ -291,6 +362,27 @@ Tabs.Main:AddToggle("TelekinesisEnabled", {
 }):OnChanged(function(Value)
     TelekinesisEnabled = Value
     toggleTelekinesis(TelekinesisEnabled)
+end)
+
+Tabs.Main:AddToggle("FlyEnabled", {
+    Title = "Fly"
+}):OnChanged(function(Value)
+    FlyEnabled = Value
+    toggleFly(FlyEnabled)
+end)
+
+Tabs.Main:AddToggle("SpeedHackEnabled", {
+    Title = "Speed Hack"
+}):OnChanged(function(Value)
+    SpeedHackEnabled = Value
+    toggleSpeedHack(SpeedHackEnabled)
+end)
+
+Tabs.Main:AddToggle("JumpPowerEnabled", {
+    Title = "Jump Power"
+}):OnChanged(function(Value)
+    JumpPowerEnabled = Value
+    toggleJumpPower(JumpPowerEnabled)
 end)
 
 -- Adiciona opções na aba "Combat"
@@ -367,4 +459,25 @@ Tabs.AntiCheat:AddToggle("HideNameEnabled", {
     hideName(HideNameEnabled)
 end)
 
-print("ShadowHat 🎩 v2 (Combat + Anti-Cheat + Telekinesis) carregado com sucesso!")
+-- Adiciona opções na aba "Performance"
+Tabs.Performance:AddToggle("LowGraphicsEnabled", {
+    Title = "Gráficos Baixos"
+}):OnChanged(function(Value)
+    if Value then
+        settings().Rendering.QualityLevel = "Level01" -- Define a qualidade gráfica mais baixa
+    else
+        settings().Rendering.QualityLevel = "Level10" -- Restaura a qualidade gráfica
+    end
+end)
+
+Tabs.Performance:AddButton("RemoveUnusedAssets", {
+    Title = "Remover Assets Desnecessários"
+}, function()
+    for _, child in pairs(workspace:GetDescendants()) do
+        if child:IsA("BasePart") and not child.Anchored then
+            child:Destroy()
+        end
+    end
+end)
+
+print("ShadowHat 🎩 v2 (Combat + Anti-Cheat + Telekinesis + Performance) carregado com sucesso!")

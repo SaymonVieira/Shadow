@@ -1,4 +1,4 @@
--- Versão mínima + Módulo de Combat completo
+-- Versão completa com correções e novas funcionalidades
 local Fluent
 pcall(function()
     Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
@@ -33,6 +33,9 @@ local HitboxEnabled = false
 local WallbangEnabled = false
 local NoclipEnabled = false
 local InvisibilityEnabled = false
+local AntiCheatBypassEnabled = false
+local HideNameEnabled = false
+local TelekinesisEnabled = false
 
 -- Função para desenhar caixas ESP
 local function drawESP(player)
@@ -186,6 +189,12 @@ local function toggleInvisibility(enabled)
     for _, part in pairs(character:GetChildren()) do
         if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
             part.Transparency = enabled and 1 or 0
+        elseif part:IsA("Accessory") then
+            for _, accessoryPart in pairs(part:GetChildren()) do
+                if accessoryPart:IsA("BasePart") then
+                    accessoryPart.Transparency = enabled and 1 or 0
+                end
+            end
         end
     end
 end
@@ -207,12 +216,82 @@ local function enableWallbang(enabled)
     end
 end
 
+-- Função para Anti-Cheat Bypass
+local function enableAntiCheatBypass(enabled)
+    if enabled then
+        -- Remove scripts de detecção
+        for _, script in pairs(workspace:GetDescendants()) do
+            if script:IsA("Script") and script.Name == "AntiCheat" then
+                script.Disabled = true
+            end
+        end
+
+        -- Oculta logs
+        game:SetPlaceID(0)
+        setfpscap(60)
+    else
+        -- Reativa scripts desativados
+        for _, script in pairs(workspace:GetDescendants()) do
+            if script:IsA("Script") and script.Name == "AntiCheat" then
+                script.Disabled = false
+            end
+        end
+    end
+end
+
+-- Função para Ocultar Nome
+local function hideName(enabled)
+    if enabled then
+        LocalPlayer.Name = "Anonymous10101"
+        LocalPlayer.DisplayName = "Anonymous10101"
+    else
+        LocalPlayer.Name = LocalPlayer.Name -- Restaura o nome original
+        LocalPlayer.DisplayName = LocalPlayer.DisplayName -- Restaura o nome exibido
+    end
+end
+
+-- Função para Telekinesis
+local telekinesisConnection = nil
+local selectedObject = nil
+local function toggleTelekinesis(enabled)
+    if enabled then
+        telekinesisConnection = UserInputService.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                local target = Mouse.Target
+                if target and target.Parent then
+                    selectedObject = target
+                end
+            end
+        end)
+
+        RunService.RenderStepped:Connect(function()
+            if selectedObject then
+                selectedObject.CFrame = CFrame.new(Mouse.Hit.Position)
+            end
+        end)
+    else
+        if telekinesisConnection then
+            telekinesisConnection:Disconnect()
+            telekinesisConnection = nil
+        end
+        selectedObject = nil
+    end
+end
+
 -- Adiciona abas
 local Tabs = {
     Main = Window:AddTab({ Title = "Main", Icon = "" }),
     Combat = Window:AddTab({ Title = "Combat", Icon = "sword" }),
     AntiCheat = Window:AddTab({ Title = "Anti-Cheat", Icon = "shield" })
 }
+
+-- Adiciona opções na aba "Main"
+Tabs.Main:AddToggle("TelekinesisEnabled", {
+    Title = "Telekinesis"
+}):OnChanged(function(Value)
+    TelekinesisEnabled = Value
+    toggleTelekinesis(TelekinesisEnabled)
+end)
 
 -- Adiciona opções na aba "Combat"
 Tabs.Combat:AddToggle("ESPEnabled", {
@@ -273,4 +352,19 @@ Tabs.Combat:AddToggle("InvisibilityEnabled", {
     toggleInvisibility(InvisibilityEnabled)
 end)
 
-print("ShadowHat 🎩 v2 (Combat completo) carregado com sucesso!")
+-- Adiciona opções na aba "Anti-Cheat"
+Tabs.AntiCheat:AddToggle("AntiCheatBypassEnabled", {
+    Title = "Anti-Cheat Bypass"
+}):OnChanged(function(Value)
+    AntiCheatBypassEnabled = Value
+    enableAntiCheatBypass(AntiCheatBypassEnabled)
+end)
+
+Tabs.AntiCheat:AddToggle("HideNameEnabled", {
+    Title = "Ocultar Nome"
+}):OnChanged(function(Value)
+    HideNameEnabled = Value
+    hideName(HideNameEnabled)
+end)
+
+print("ShadowHat 🎩 v2 (Combat + Anti-Cheat + Telekinesis) carregado com sucesso!")

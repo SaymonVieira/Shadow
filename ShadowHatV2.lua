@@ -1,4 +1,4 @@
--- Versão completa com correções e novas funcionalidades
+-- Versão completa com correções e interface melhorada
 local Fluent
 pcall(function()
     Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
@@ -12,8 +12,8 @@ end
 local Window = Fluent:CreateWindow({
     Title = "ShadowHat 🎩 v2",
     SubTitle = "Criado por Saymon Vieira",
-    TabWidth = 160,
-    Size = UDim2.fromOffset(580, 460),
+    TabWidth = 180, -- Largura das abas ajustada
+    Size = UDim2.fromOffset(600, 500), -- Tamanho maior para melhor visualização
     Acrylic = true, -- Efeito de desfoque
     Theme = "Dark", -- Tema escuro
     MinimizeKey = Enum.KeyCode.LeftControl -- Tecla para minimizar
@@ -136,7 +136,7 @@ local function removeHitbox(player)
     end
 end
 
--- Função para Aimbot
+-- Função para Aimbot (corrigida)
 local function aimbot()
     if not AimbotEnabled then
         return
@@ -158,11 +158,12 @@ local function aimbot()
     end
 
     if closestPlayer then
-        Camera.CFrame = CFrame.new(Camera.CFrame.Position, closestPlayer.Position)
+        -- Garante que a câmera siga o alvo sem interferir na direção das balas
+        Camera.CFrame = CFrame.new(Camera.CFrame.Position, closestPlayer.Position + Vector3.new(0, 2, 0)) -- Ajuste para mirar no torso
     end
 end
 
--- Função para Noclip
+-- Função para Noclip (corrigida)
 local noclipConnection = nil
 local function toggleNoclip(enabled)
     if enabled then
@@ -182,6 +183,13 @@ local function toggleNoclip(enabled)
         end
     end
 end
+
+-- Função para desativar Noclip automaticamente ao morrer
+LocalPlayer.CharacterAdded:Connect(function(character)
+    character:WaitForChild("Humanoid").Died:Connect(function()
+        toggleNoclip(false) -- Desativa o Noclip ao morrer
+    end)
+end)
 
 -- Função para Invisibilidade
 local function toggleInvisibility(enabled)
@@ -350,10 +358,10 @@ end
 
 -- Adiciona abas
 local Tabs = {
-    Main = Window:AddTab({ Title = "Main", Icon = "" }),
+    Main = Window:AddTab({ Title = "Main", Icon = "home" }),
     Combat = Window:AddTab({ Title = "Combat", Icon = "sword" }),
     AntiCheat = Window:AddTab({ Title = "Anti-Cheat", Icon = "shield" }),
-    Performance = Window:AddTab({ Title = "Performance", Icon = "bolt" })
+    Performance = Window:AddTab({ Title = "Performance", Icon = "gamepad" }) -- Ícone de controle de videogame
 }
 
 -- Adiciona opções na aba "Main"

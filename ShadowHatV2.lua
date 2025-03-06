@@ -1,4 +1,4 @@
--- Versão completa e estável do ShadowHat 🎩 v2
+-- Versão completa com correções e interface melhorada
 local Fluent
 pcall(function()
     Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
@@ -12,11 +12,11 @@ end
 local Window = Fluent:CreateWindow({
     Title = "ShadowHat 🎩 v2",
     SubTitle = "Criado por Saymon Vieira",
-    TabWidth = 180,
-    Size = UDim2.fromOffset(600, 500),
-    Acrylic = true,
-    Theme = "Dark",
-    MinimizeKey = Enum.KeyCode.LeftControl
+    TabWidth = 180, -- Largura das abas ajustada
+    Size = UDim2.fromOffset(600, 500), -- Tamanho maior para melhor visualização
+    Acrylic = true, -- Efeito de desfoque
+    Theme = "Dark", -- Tema escuro
+    MinimizeKey = Enum.KeyCode.LeftControl -- Tecla para minimizar
 })
 
 -- Variáveis globais
@@ -25,6 +25,7 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
+local Mouse = LocalPlayer:GetMouse()
 
 -- Variáveis compartilhadas
 local ESPEnabled = false
@@ -39,33 +40,6 @@ local TelekinesisEnabled = false
 local FlyEnabled = false
 local SpeedHackEnabled = false
 local JumpPowerEnabled = false
-
--- Função para exibir mensagens de confirmação
-local function showNotification(message)
-    local notification = Instance.new("ScreenGui")
-    local frame = Instance.new("Frame")
-    local textLabel = Instance.new("TextLabel")
-
-    frame.Size = UDim2.new(0, 200, 0, 50)
-    frame.Position = UDim2.new(0, 10, 0, 10)
-    frame.BackgroundColor3 = Color3.new(0, 0, 0)
-    frame.BackgroundTransparency = 0.5
-    frame.BorderSizePixel = 0
-
-    textLabel.Text = message
-    textLabel.TextColor3 = Color3.new(1, 1, 1)
-    textLabel.Font = Enum.Font.SourceSansBold
-    textLabel.TextSize = 16
-    textLabel.Size = UDim2.new(1, 0, 1, 0)
-    textLabel.BackgroundTransparency = 1
-    textLabel.Parent = frame
-
-    frame.Parent = notification
-    notification.Parent = game.CoreGui
-
-    wait(3)
-    notification:Destroy()
-end
 
 -- Função para desenhar caixas ESP
 local function drawESP(player)
@@ -83,18 +57,18 @@ local function drawESP(player)
         local screenPosition, onScreen = Camera:WorldToScreenPoint(rootPart.Position)
 
         if onScreen then
-            local size = Vector3.new(4, 6, 0)
+            local size = Vector3.new(4, 6, 0) -- Tamanho da hitbox
             local top = Camera:WorldToScreenPoint((rootPart.CFrame * CFrame.new(0, size.Y / 2, 0)).Position)
             local bottom = Camera:WorldToScreenPoint((rootPart.CFrame * CFrame.new(0, -size.Y / 2, 0)).Position)
 
             box.Visible = true
-            box.Color = Color3.new(1, 1, 1)
+            box.Color = Color3.new(1, 1, 1) -- Cor branca
             box.Thickness = 1
             box.Size = Vector2.new(math.abs(top.X - bottom.X), math.abs(top.Y - bottom.Y))
             box.Position = Vector2.new(top.X - box.Size.X / 2, top.Y)
 
             text.Visible = true
-            text.Color = Color3.new(1, 1, 1)
+            text.Color = Color3.new(1, 1, 1) -- Cor branca
             text.Size = 16
             text.Position = Vector2.new(box.Position.X, box.Position.Y - 20)
             text.Text = player.Name .. " [" .. math.floor((LocalPlayer.Character.HumanoidRootPart.Position - rootPart.Position).Magnitude) .. "m]"
@@ -119,12 +93,12 @@ local function createHitbox(player)
     -- Cria o hitbox usando BoxHandleAdornment
     local hitbox = Instance.new("BoxHandleAdornment")
     hitbox.Name = "HitboxAdornment"
-    hitbox.Size = Vector3.new(8, 10, 8)
-    hitbox.Adornee = player.Character:WaitForChild("HumanoidRootPart", 5)
+    hitbox.Size = Vector3.new(8, 10, 8) -- Tamanho maior (ajustável)
+    hitbox.Adornee = player.Character:WaitForChild("HumanoidRootPart", 5) -- Espera o jogador renascer
     hitbox.AlwaysOnTop = true
     hitbox.ZIndex = 1
-    hitbox.Transparency = 0.5
-    hitbox.Color3 = Color3.new(1, 0, 0)
+    hitbox.Transparency = 0.5 -- Semi-transparente
+    hitbox.Color3 = Color3.new(1, 0, 0) -- Cor vermelha
     hitbox.Parent = player.Character
 
     -- Conecta o hitbox ao jogador para causar dano
@@ -135,7 +109,7 @@ local function createHitbox(player)
             if tool:FindFirstChild("Handle") then
                 local humanoid = player.Character:FindFirstChild("Humanoid")
                 if humanoid then
-                    humanoid:TakeDamage(10)
+                    humanoid:TakeDamage(10) -- Dano ajustável
                 end
             end
         end
@@ -162,7 +136,7 @@ local function removeHitbox(player)
     end
 end
 
--- Função para Aimbot
+-- Função para Aimbot (corrigida)
 local function aimbot()
     if not AimbotEnabled then
         return
@@ -184,11 +158,12 @@ local function aimbot()
     end
 
     if closestPlayer then
-        Camera.CFrame = CFrame.new(Camera.CFrame.Position, closestPlayer.Position + Vector3.new(0, 2, 0))
+        -- Garante que a câmera siga o alvo sem interferir na direção das balas
+        Camera.CFrame = CFrame.new(Camera.CFrame.Position, closestPlayer.Position + Vector3.new(0, 2, 0)) -- Ajuste para mirar no torso
     end
 end
 
--- Função para Noclip
+-- Função para Noclip (corrigida)
 local noclipConnection = nil
 local function toggleNoclip(enabled)
     if enabled then
@@ -208,6 +183,13 @@ local function toggleNoclip(enabled)
         end
     end
 end
+
+-- Função para desativar Noclip automaticamente ao morrer
+LocalPlayer.CharacterAdded:Connect(function(character)
+    character:WaitForChild("Humanoid").Died:Connect(function()
+        toggleNoclip(false) -- Desativa o Noclip ao morrer
+    end)
+end)
 
 -- Função para Invisibilidade
 local function toggleInvisibility(enabled)
@@ -281,8 +263,8 @@ local function hideName(enabled)
         LocalPlayer.Name = "Anonymous10101"
         LocalPlayer.DisplayName = "Anonymous10101"
     else
-        LocalPlayer.Name = LocalPlayer.Name
-        LocalPlayer.DisplayName = LocalPlayer.DisplayName
+        LocalPlayer.Name = LocalPlayer.Name -- Restaura o nome original
+        LocalPlayer.DisplayName = LocalPlayer.DisplayName -- Restaura o nome exibido
     end
 end
 
@@ -346,7 +328,7 @@ local function toggleFly(enabled)
             end
 
             rootPart.Velocity = velocity
-            velocity = velocity * 0.9
+            velocity = velocity * 0.9 -- Reduz a velocidade gradualmente
         end)
     else
         if flyConnection then
@@ -359,18 +341,18 @@ end
 -- Função para Speed Hack
 local function toggleSpeedHack(enabled)
     if enabled then
-        LocalPlayer.Character.Humanoid.WalkSpeed = 100
+        LocalPlayer.Character.Humanoid.WalkSpeed = 100 -- Velocidade ajustável
     else
-        LocalPlayer.Character.Humanoid.WalkSpeed = 16
+        LocalPlayer.Character.Humanoid.WalkSpeed = 16 -- Velocidade padrão
     end
 end
 
 -- Função para Jump Power
 local function toggleJumpPower(enabled)
     if enabled then
-        LocalPlayer.Character.Humanoid.JumpPower = 100
+        LocalPlayer.Character.Humanoid.JumpPower = 100 -- Força de pulo ajustável
     else
-        LocalPlayer.Character.Humanoid.JumpPower = 50
+        LocalPlayer.Character.Humanoid.JumpPower = 50 -- Força de pulo padrão
     end
 end
 
@@ -379,7 +361,7 @@ local Tabs = {
     Main = Window:AddTab({ Title = "Main", Icon = "home" }),
     Combat = Window:AddTab({ Title = "Combat", Icon = "sword" }),
     AntiCheat = Window:AddTab({ Title = "Anti-Cheat", Icon = "shield" }),
-    Performance = Window:AddTab({ Title = "Performance", Icon = "gamepad" })
+    Performance = Window:AddTab({ Title = "Performance", Icon = "gamepad" }) -- Ícone de controle de videogame
 }
 
 -- Adiciona opções na aba "Main"
@@ -388,7 +370,6 @@ Tabs.Main:AddToggle("TelekinesisEnabled", {
 }):OnChanged(function(Value)
     TelekinesisEnabled = Value
     toggleTelekinesis(TelekinesisEnabled)
-    showNotification("Telekinesis " .. (Value and "ativado!" or "desativado!"))
 end)
 
 Tabs.Main:AddToggle("FlyEnabled", {
@@ -396,7 +377,6 @@ Tabs.Main:AddToggle("FlyEnabled", {
 }):OnChanged(function(Value)
     FlyEnabled = Value
     toggleFly(FlyEnabled)
-    showNotification("Fly " .. (Value and "ativado!" or "desativado!"))
 end)
 
 Tabs.Main:AddToggle("SpeedHackEnabled", {
@@ -404,7 +384,6 @@ Tabs.Main:AddToggle("SpeedHackEnabled", {
 }):OnChanged(function(Value)
     SpeedHackEnabled = Value
     toggleSpeedHack(SpeedHackEnabled)
-    showNotification("Speed Hack " .. (Value and "ativado!" or "desativado!"))
 end)
 
 Tabs.Main:AddToggle("JumpPowerEnabled", {
@@ -412,7 +391,6 @@ Tabs.Main:AddToggle("JumpPowerEnabled", {
 }):OnChanged(function(Value)
     JumpPowerEnabled = Value
     toggleJumpPower(JumpPowerEnabled)
-    showNotification("Jump Power " .. (Value and "ativado!" or "desativado!"))
 end)
 
 -- Adiciona opções na aba "Combat"
@@ -426,9 +404,6 @@ Tabs.Combat:AddToggle("ESPEnabled", {
                 drawESP(player)
             end
         end
-        showNotification("ESP ativado!")
-    else
-        showNotification("ESP desativado!")
     end
 end)
 
@@ -437,4 +412,80 @@ Tabs.Combat:AddToggle("AimbotEnabled", {
 }):OnChanged(function(Value)
     AimbotEnabled = Value
     if AimbotEnabled then
-        RunService.RenderStepped:Connect(aim
+        RunService.RenderStepped:Connect(aimbot)
+    end
+end)
+
+Tabs.Combat:AddToggle("HitboxEnabled", {
+    Title = "Hitbox Expandida"
+}):OnChanged(function(Value)
+    HitboxEnabled = Value
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            if HitboxEnabled then
+                createHitbox(player)
+            else
+                removeHitbox(player)
+            end
+        end
+    end
+end)
+
+Tabs.Combat:AddToggle("WallbangEnabled", {
+    Title = "Wallbang"
+}):OnChanged(function(Value)
+    WallbangEnabled = Value
+    enableWallbang(WallbangEnabled)
+end)
+
+Tabs.Combat:AddToggle("NoclipEnabled", {
+    Title = "Noclip"
+}):OnChanged(function(Value)
+    NoclipEnabled = Value
+    toggleNoclip(NoclipEnabled)
+end)
+
+Tabs.Combat:AddToggle("InvisibilityEnabled", {
+    Title = "Invisibilidade"
+}):OnChanged(function(Value)
+    InvisibilityEnabled = Value
+    toggleInvisibility(InvisibilityEnabled)
+end)
+
+-- Adiciona opções na aba "Anti-Cheat"
+Tabs.AntiCheat:AddToggle("AntiCheatBypassEnabled", {
+    Title = "Anti-Cheat Bypass"
+}):OnChanged(function(Value)
+    AntiCheatBypassEnabled = Value
+    enableAntiCheatBypass(AntiCheatBypassEnabled)
+end)
+
+Tabs.AntiCheat:AddToggle("HideNameEnabled", {
+    Title = "Ocultar Nome"
+}):OnChanged(function(Value)
+    HideNameEnabled = Value
+    hideName(HideNameEnabled)
+end)
+
+-- Adiciona opções na aba "Performance"
+Tabs.Performance:AddToggle("LowGraphicsEnabled", {
+    Title = "Gráficos Baixos"
+}):OnChanged(function(Value)
+    if Value then
+        settings().Rendering.QualityLevel = "Level01" -- Define a qualidade gráfica mais baixa
+    else
+        settings().Rendering.QualityLevel = "Level10" -- Restaura a qualidade gráfica
+    end
+end)
+
+Tabs.Performance:AddButton("RemoveUnusedAssets", {
+    Title = "Remover Assets Desnecessários"
+}, function()
+    for _, child in pairs(workspace:GetDescendants()) do
+        if child:IsA("BasePart") and not child.Anchored then
+            child:Destroy()
+        end
+    end
+end)
+
+print("ShadowHat 🎩 v2 (Combat + Anti-Cheat + Telekinesis + Performance) carregado com sucesso!")

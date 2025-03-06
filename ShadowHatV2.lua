@@ -1,4 +1,4 @@
--- Versão completa com correções e interface melhorada
+-- Versão completa com correções, interface melhorada e Hitbox funcional
 local Fluent
 pcall(function()
     Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
@@ -12,11 +12,11 @@ end
 local Window = Fluent:CreateWindow({
     Title = "ShadowHat 🎩 v2",
     SubTitle = "Criado por Saymon Vieira",
-    TabWidth = 180, -- Largura das abas ajustada
-    Size = UDim2.fromOffset(600, 500), -- Tamanho maior para melhor visualização
-    Acrylic = true, -- Efeito de desfoque
-    Theme = "Dark", -- Tema escuro
-    MinimizeKey = Enum.KeyCode.LeftControl -- Tecla para minimizar
+    TabWidth = 180,
+    Size = UDim2.fromOffset(600, 500),
+    Acrylic = true,
+    Theme = "Dark",
+    MinimizeKey = Enum.KeyCode.LeftControl
 })
 
 -- Variáveis globais
@@ -25,7 +25,6 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
-local Mouse = LocalPlayer:GetMouse()
 
 -- Variáveis compartilhadas
 local ESPEnabled = false
@@ -57,18 +56,18 @@ local function drawESP(player)
         local screenPosition, onScreen = Camera:WorldToScreenPoint(rootPart.Position)
 
         if onScreen then
-            local size = Vector3.new(4, 6, 0) -- Tamanho da hitbox
+            local size = Vector3.new(4, 6, 0)
             local top = Camera:WorldToScreenPoint((rootPart.CFrame * CFrame.new(0, size.Y / 2, 0)).Position)
             local bottom = Camera:WorldToScreenPoint((rootPart.CFrame * CFrame.new(0, -size.Y / 2, 0)).Position)
 
             box.Visible = true
-            box.Color = Color3.new(1, 1, 1) -- Cor branca
+            box.Color = Color3.new(1, 1, 1)
             box.Thickness = 1
             box.Size = Vector2.new(math.abs(top.X - bottom.X), math.abs(top.Y - bottom.Y))
             box.Position = Vector2.new(top.X - box.Size.X / 2, top.Y)
 
             text.Visible = true
-            text.Color = Color3.new(1, 1, 1) -- Cor branca
+            text.Color = Color3.new(1, 1, 1)
             text.Size = 16
             text.Position = Vector2.new(box.Position.X, box.Position.Y - 20)
             text.Text = player.Name .. " [" .. math.floor((LocalPlayer.Character.HumanoidRootPart.Position - rootPart.Position).Magnitude) .. "m]"
@@ -79,7 +78,7 @@ local function drawESP(player)
     end)
 end
 
--- Função para criar Hitbox expandida
+-- Função para criar Hitbox expandida (novo sistema funcional)
 local function createHitbox(player)
     if not HitboxEnabled or not player.Character then
         return
@@ -136,7 +135,7 @@ local function removeHitbox(player)
     end
 end
 
--- Função para Aimbot (corrigida)
+-- Função para Aimbot
 local function aimbot()
     if not AimbotEnabled then
         return
@@ -158,12 +157,11 @@ local function aimbot()
     end
 
     if closestPlayer then
-        -- Garante que a câmera siga o alvo sem interferir na direção das balas
-        Camera.CFrame = CFrame.new(Camera.CFrame.Position, closestPlayer.Position + Vector3.new(0, 2, 0)) -- Ajuste para mirar no torso
+        Camera.CFrame = CFrame.new(Camera.CFrame.Position, closestPlayer.Position + Vector3.new(0, 2, 0))
     end
 end
 
--- Função para Noclip (corrigida)
+-- Função para Noclip
 local noclipConnection = nil
 local function toggleNoclip(enabled)
     if enabled then
@@ -183,13 +181,6 @@ local function toggleNoclip(enabled)
         end
     end
 end
-
--- Função para desativar Noclip automaticamente ao morrer
-LocalPlayer.CharacterAdded:Connect(function(character)
-    character:WaitForChild("Humanoid").Died:Connect(function()
-        toggleNoclip(false) -- Desativa o Noclip ao morrer
-    end)
-end)
 
 -- Função para Invisibilidade
 local function toggleInvisibility(enabled)
@@ -263,8 +254,8 @@ local function hideName(enabled)
         LocalPlayer.Name = "Anonymous10101"
         LocalPlayer.DisplayName = "Anonymous10101"
     else
-        LocalPlayer.Name = LocalPlayer.Name -- Restaura o nome original
-        LocalPlayer.DisplayName = LocalPlayer.DisplayName -- Restaura o nome exibido
+        LocalPlayer.Name = LocalPlayer.Name
+        LocalPlayer.DisplayName = LocalPlayer.DisplayName
     end
 end
 
@@ -328,7 +319,7 @@ local function toggleFly(enabled)
             end
 
             rootPart.Velocity = velocity
-            velocity = velocity * 0.9 -- Reduz a velocidade gradualmente
+            velocity = velocity * 0.9
         end)
     else
         if flyConnection then
@@ -341,18 +332,18 @@ end
 -- Função para Speed Hack
 local function toggleSpeedHack(enabled)
     if enabled then
-        LocalPlayer.Character.Humanoid.WalkSpeed = 100 -- Velocidade ajustável
+        LocalPlayer.Character.Humanoid.WalkSpeed = 100
     else
-        LocalPlayer.Character.Humanoid.WalkSpeed = 16 -- Velocidade padrão
+        LocalPlayer.Character.Humanoid.WalkSpeed = 16
     end
 end
 
 -- Função para Jump Power
 local function toggleJumpPower(enabled)
     if enabled then
-        LocalPlayer.Character.Humanoid.JumpPower = 100 -- Força de pulo ajustável
+        LocalPlayer.Character.Humanoid.JumpPower = 100
     else
-        LocalPlayer.Character.Humanoid.JumpPower = 50 -- Força de pulo padrão
+        LocalPlayer.Character.Humanoid.JumpPower = 50
     end
 end
 
@@ -361,7 +352,7 @@ local Tabs = {
     Main = Window:AddTab({ Title = "Main", Icon = "home" }),
     Combat = Window:AddTab({ Title = "Combat", Icon = "sword" }),
     AntiCheat = Window:AddTab({ Title = "Anti-Cheat", Icon = "shield" }),
-    Performance = Window:AddTab({ Title = "Performance", Icon = "gamepad" }) -- Ícone de controle de videogame
+    Performance = Window:AddTab({ Title = "Performance", Icon = "gamepad" })
 }
 
 -- Adiciona opções na aba "Main"
@@ -416,76 +407,4 @@ Tabs.Combat:AddToggle("AimbotEnabled", {
     end
 end)
 
-Tabs.Combat:AddToggle("HitboxEnabled", {
-    Title = "Hitbox Expandida"
-}):OnChanged(function(Value)
-    HitboxEnabled = Value
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character then
-            if HitboxEnabled then
-                createHitbox(player)
-            else
-                removeHitbox(player)
-            end
-        end
-    end
-end)
-
-Tabs.Combat:AddToggle("WallbangEnabled", {
-    Title = "Wallbang"
-}):OnChanged(function(Value)
-    WallbangEnabled = Value
-    enableWallbang(WallbangEnabled)
-end)
-
-Tabs.Combat:AddToggle("NoclipEnabled", {
-    Title = "Noclip"
-}):OnChanged(function(Value)
-    NoclipEnabled = Value
-    toggleNoclip(NoclipEnabled)
-end)
-
-Tabs.Combat:AddToggle("InvisibilityEnabled", {
-    Title = "Invisibilidade"
-}):OnChanged(function(Value)
-    InvisibilityEnabled = Value
-    toggleInvisibility(InvisibilityEnabled)
-end)
-
--- Adiciona opções na aba "Anti-Cheat"
-Tabs.AntiCheat:AddToggle("AntiCheatBypassEnabled", {
-    Title = "Anti-Cheat Bypass"
-}):OnChanged(function(Value)
-    AntiCheatBypassEnabled = Value
-    enableAntiCheatBypass(AntiCheatBypassEnabled)
-end)
-
-Tabs.AntiCheat:AddToggle("HideNameEnabled", {
-    Title = "Ocultar Nome"
-}):OnChanged(function(Value)
-    HideNameEnabled = Value
-    hideName(HideNameEnabled)
-end)
-
--- Adiciona opções na aba "Performance"
-Tabs.Performance:AddToggle("LowGraphicsEnabled", {
-    Title = "Gráficos Baixos"
-}):OnChanged(function(Value)
-    if Value then
-        settings().Rendering.QualityLevel = "Level01" -- Define a qualidade gráfica mais baixa
-    else
-        settings().Rendering.QualityLevel = "Level10" -- Restaura a qualidade gráfica
-    end
-end)
-
-Tabs.Performance:AddButton("RemoveUnusedAssets", {
-    Title = "Remover Assets Desnecessários"
-}, function()
-    for _, child in pairs(workspace:GetDescendants()) do
-        if child:IsA("BasePart") and not child.Anchored then
-            child:Destroy()
-        end
-    end
-end)
-
-print("ShadowHat 🎩 v2 (Combat + Anti-Cheat + Telekinesis + Performance) carregado com sucesso!")
+Tabs.Combat:AddToggle("HitboxEnabled

@@ -1,4 +1,4 @@
--- Versão completa com correções, interface melhorada e Hitbox funcional
+-- Versão completa com correções e interface melhorada
 local Fluent
 pcall(function()
     Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
@@ -25,6 +25,7 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
+local Mouse = LocalPlayer:GetMouse()
 
 -- Variáveis compartilhadas
 local ESPEnabled = false
@@ -79,59 +80,45 @@ local function drawESP(player)
 end
 
 -- Função para criar Hitbox expandida (novo sistema funcional)
-local function createHitbox(player)
-    if not HitboxEnabled or not player.Character then
+local HeadSize = 20 -- Tamanho do hitbox
+local IsDisabled = false -- Ativa ou desativa o script
+local IsTeamCheckEnabled = false -- Verifica se o jogador é do mesmo time
+
+RunService.RenderStepped:Connect(function()
+    if IsDisabled then
         return
     end
 
-    -- Remove hitbox existente
-    if player.Character:FindFirstChild("HitboxAdornment") then
-        player.Character.HitboxAdornment:Destroy()
+    local localPlayer = LocalPlayer
+    if not localPlayer then
+        return
     end
 
-    -- Cria o hitbox usando BoxHandleAdornment
-    local hitbox = Instance.new("BoxHandleAdornment")
-    hitbox.Name = "HitboxAdornment"
-    hitbox.Size = Vector3.new(8, 10, 8) -- Tamanho maior (ajustável)
-    hitbox.Adornee = player.Character:WaitForChild("HumanoidRootPart", 5) -- Espera o jogador renascer
-    hitbox.AlwaysOnTop = true
-    hitbox.ZIndex = 1
-    hitbox.Transparency = 0.5 -- Semi-transparente
-    hitbox.Color3 = Color3.new(1, 0, 0) -- Cor vermelha
-    hitbox.Parent = player.Character
+    local localPlayerTeam = localPlayer.Team
 
-    -- Conecta o hitbox ao jogador para causar dano
-    local connection
-    connection = hitbox.Adornee.Touched:Connect(function(hit)
-        if hit and hit.Parent and hit.Parent:IsA("Tool") then
-            local tool = hit.Parent
-            if tool:FindFirstChild("Handle") then
-                local humanoid = player.Character:FindFirstChild("Humanoid")
-                if humanoid then
-                    humanoid:TakeDamage(10) -- Dano ajustável
-                end
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= localPlayer and (not IsTeamCheckEnabled or player.Team ~= localPlayerTeam) then
+            local humanoidRootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+            if humanoidRootPart then
+                humanoidRootPart.Size = Vector3.new(HeadSize, HeadSize, HeadSize)
+                humanoidRootPart.Transparency = 0.7
+                humanoidRootPart.BrickColor = BrickColor.new("Really blue")
+                humanoidRootPart.Material = Enum.Material.Neon
+                humanoidRootPart.CanCollide = false
             end
         end
-    end)
-
-    -- Reconecta o hitbox se o jogador renascer
-    player.CharacterAdded:Connect(function(newCharacter)
-        newCharacter:WaitForChild("HumanoidRootPart", 5)
-        hitbox.Adornee = newCharacter.HumanoidRootPart
-    end)
-
-    -- Desconecta a conexão quando o hitbox é removido
-    hitbox.Destroying:Connect(function()
-        if connection then
-            connection:Disconnect()
-        end
-    end)
-end
+    end
+end)
 
 -- Função para remover Hitbox
 local function removeHitbox(player)
-    if player.Character and player.Character:FindFirstChild("HitboxAdornment") then
-        player.Character.HitboxAdornment:Destroy()
+    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        local humanoidRootPart = player.Character.HumanoidRootPart
+        humanoidRootPart.Size = Vector3.new(2, 2, 1) -- Restaura o tamanho original
+        humanoidRootPart.Transparency = 0
+        humanoidRootPart.BrickColor = BrickColor.new("Medium stone grey")
+        humanoidRootPart.Material = Enum.Material.Plastic
+        humanoidRootPart.CanCollide = true
     end
 end
 
@@ -228,18 +215,15 @@ end
 -- Função para Anti-Cheat Bypass
 local function enableAntiCheatBypass(enabled)
     if enabled then
-        -- Remove scripts de detecção
         for _, script in pairs(workspace:GetDescendants()) do
             if script:IsA("Script") and script.Name == "AntiCheat" then
                 script.Disabled = true
             end
         end
 
-        -- Oculta logs
         game:SetPlaceID(0)
         setfpscap(60)
     else
-        -- Reativa scripts desativados
         for _, script in pairs(workspace:GetDescendants()) do
             if script:IsA("Script") and script.Name == "AntiCheat" then
                 script.Disabled = false
@@ -407,4 +391,67 @@ Tabs.Combat:AddToggle("AimbotEnabled", {
     end
 end)
 
-Tabs.Combat:AddToggle("HitboxEnabled
+Tabs.Combat:AddToggle("HitboxEnabled", {
+    Title = "Hitbox Expandida"
+}):OnChanged(function(Value)
+    IsDisabled = not Value
+end)
+
+Tabs.Combat:AddToggle("WallbangEnabled", {
+    Title = "Wallbang"
+}):OnChanged(function(Value)
+    WallbangEnabled = Value
+    enableWallbang(WallbangEnabled)
+end)
+
+Tabs.Combat:AddToggle("NoclipEnabled", {
+    Title = "Noclip"
+}):OnChanged(function(Value)
+    NoclipEnabled = Value
+    toggleNoclip(NoclipEnabled)
+end)
+
+Tabs.Combat:AddToggle("InvisibilityEnabled", {
+    Title = "Invisibilidade"
+}):OnChanged(function(Value)
+    InvisibilityEnabled = Value
+    toggleInvisibility(InvisibilityEnabled)
+end)
+
+-- Adiciona opções na aba "Anti-Cheat"
+Tabs.AntiCheat:AddToggle("AntiCheatBypassEnabled", {
+    Title = "Anti-Cheat Bypass"
+}):OnChanged(function(Value)
+    AntiCheatBypassEnabled = Value
+    enableAntiCheatBypass(AntiCheatBypassEnabled)
+end)
+
+Tabs.AntiCheat:AddToggle("HideNameEnabled", {
+    Title = "Ocultar Nome"
+}):OnChanged(function(Value)
+    HideNameEnabled = Value
+    hideName(HideNameEnabled)
+end)
+
+-- Adiciona opções na aba "Performance"
+Tabs.Performance:AddToggle("LowGraphicsEnabled", {
+    Title = "Gráficos Baixos"
+}):OnChanged(function(Value)
+    if Value then
+        settings().Rendering.QualityLevel = "Level01"
+    else
+        settings().Rendering.QualityLevel = "Level10"
+    end
+end)
+
+Tabs.Performance:AddButton("RemoveUnusedAssets", {
+    Title = "Remover Assets Desnecessários"
+}, function()
+    for _, child in pairs(workspace:GetDescendants()) do
+        if child:IsA("BasePart") and not child.Anchored then
+            child:Destroy()
+        end
+    end
+end)
+
+print("ShadowHat 🎩 v2 (Combat + Anti-Cheat + Telekinesis + Performance) carregado com sucesso!")

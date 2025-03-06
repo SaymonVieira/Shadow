@@ -31,7 +31,6 @@ local Mouse = LocalPlayer:GetMouse()
 local ESPEnabled = false
 local AimbotEnabled = false
 local HitboxEnabled = false
-local WallbangEnabled = false
 local NoclipEnabled = false
 local InvisibilityEnabled = false
 local AntiCheatBypassEnabled = false
@@ -79,50 +78,64 @@ local function drawESP(player)
     end)
 end
 
--- Função para criar Hitbox expandida (novo sistema funcional)
-local HeadSize = 20 -- Tamanho do hitbox
-local IsDisabled = false -- Ativa ou desativa o script
-local IsTeamCheckEnabled = false -- Verifica se o jogador é do mesmo time
-
-RunService.RenderStepped:Connect(function()
-    if IsDisabled then
+-- Função para criar Hitbox expandida
+local function createHitbox(player)
+    if not HitboxEnabled or not player.Character then
         return
     end
 
-    local localPlayer = LocalPlayer
-    if not localPlayer then
-        return
+    -- Remove hitbox existente
+    if player.Character:FindFirstChild("HitboxAdornment") then
+        player.Character.HitboxAdornment:Destroy()
     end
 
-    local localPlayerTeam = localPlayer.Team
+    -- Cria o hitbox usando BoxHandleAdornment
+    local hitbox = Instance.new("BoxHandleAdornment")
+    hitbox.Name = "HitboxAdornment"
+    hitbox.Size = Vector3.new(8, 10, 8)
+    hitbox.Adornee = player.Character:WaitForChild("HumanoidRootPart", 5)
+    hitbox.AlwaysOnTop = true
+    hitbox.ZIndex = 1
+    hitbox.Transparency = 0.5
+    hitbox.Color3 = Color3.new(1, 0, 0)
+    hitbox.Parent = player.Character
 
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= localPlayer and (not IsTeamCheckEnabled or player.Team ~= localPlayerTeam) then
-            local humanoidRootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-            if humanoidRootPart then
-                humanoidRootPart.Size = Vector3.new(HeadSize, HeadSize, HeadSize)
-                humanoidRootPart.Transparency = 0.7
-                humanoidRootPart.BrickColor = BrickColor.new("Really blue")
-                humanoidRootPart.Material = Enum.Material.Neon
-                humanoidRootPart.CanCollide = false
+    -- Conecta o hitbox ao jogador para causar dano
+    local connection
+    connection = hitbox.Adornee.Touched:Connect(function(hit)
+        if hit and hit.Parent and hit.Parent:IsA("Tool") then
+            local tool = hit.Parent
+            if tool:FindFirstChild("Handle") then
+                local humanoid = player.Character:FindFirstChild("Humanoid")
+                if humanoid then
+                    humanoid:TakeDamage(10)
+                end
             end
         end
-    end
-end)
+    end)
+
+    -- Reconecta o hitbox se o jogador renascer
+    player.CharacterAdded:Connect(function(newCharacter)
+        newCharacter:WaitForChild("HumanoidRootPart", 5)
+        hitbox.Adornee = newCharacter.HumanoidRootPart
+    end)
+
+    -- Desconecta a conexão quando o hitbox é removido
+    hitbox.Destroying:Connect(function()
+        if connection then
+            connection:Disconnect()
+        end
+    end)
+end
 
 -- Função para remover Hitbox
 local function removeHitbox(player)
-    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-        local humanoidRootPart = player.Character.HumanoidRootPart
-        humanoidRootPart.Size = Vector3.new(2, 2, 1) -- Restaura o tamanho original
-        humanoidRootPart.Transparency = 0
-        humanoidRootPart.BrickColor = BrickColor.new("Medium stone grey")
-        humanoidRootPart.Material = Enum.Material.Plastic
-        humanoidRootPart.CanCollide = true
+    if player.Character and player.Character:FindFirstChild("HitboxAdornment") then
+        player.Character.HitboxAdornment:Destroy()
     end
 end
 
--- Função para Aimbot
+-- Função para Aimbot (corrigida)
 local function aimbot()
     if not AimbotEnabled then
         return
@@ -144,6 +157,7 @@ local function aimbot()
     end
 
     if closestPlayer then
+        -- Ajusta a câmera para mirar no torso do alvo
         Camera.CFrame = CFrame.new(Camera.CFrame.Position, closestPlayer.Position + Vector3.new(0, 2, 0))
     end
 end
@@ -190,23 +204,6 @@ local function toggleInvisibility(enabled)
                 if toolPart:IsA("BasePart") then
                     toolPart.Transparency = enabled and 1 or 0
                 end
-            end
-        end
-    end
-end
-
--- Função para Wallbang
-local function enableWallbang(enabled)
-    if enabled then
-        for _, part in pairs(workspace:GetDescendants()) do
-            if part:IsA("BasePart") and part.CanCollide then
-                part.CanCollide = false
-            end
-        end
-    else
-        for _, part in pairs(workspace:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.CanCollide = true
             end
         end
     end
@@ -327,131 +324,4 @@ local function toggleJumpPower(enabled)
     if enabled then
         LocalPlayer.Character.Humanoid.JumpPower = 100
     else
-        LocalPlayer.Character.Humanoid.JumpPower = 50
-    end
-end
-
--- Adiciona abas
-local Tabs = {
-    Main = Window:AddTab({ Title = "Main", Icon = "home" }),
-    Combat = Window:AddTab({ Title = "Combat", Icon = "sword" }),
-    AntiCheat = Window:AddTab({ Title = "Anti-Cheat", Icon = "shield" }),
-    Performance = Window:AddTab({ Title = "Performance", Icon = "gamepad" })
-}
-
--- Adiciona opções na aba "Main"
-Tabs.Main:AddToggle("TelekinesisEnabled", {
-    Title = "Telekinesis"
-}):OnChanged(function(Value)
-    TelekinesisEnabled = Value
-    toggleTelekinesis(TelekinesisEnabled)
-end)
-
-Tabs.Main:AddToggle("FlyEnabled", {
-    Title = "Fly"
-}):OnChanged(function(Value)
-    FlyEnabled = Value
-    toggleFly(FlyEnabled)
-end)
-
-Tabs.Main:AddToggle("SpeedHackEnabled", {
-    Title = "Speed Hack"
-}):OnChanged(function(Value)
-    SpeedHackEnabled = Value
-    toggleSpeedHack(SpeedHackEnabled)
-end)
-
-Tabs.Main:AddToggle("JumpPowerEnabled", {
-    Title = "Jump Power"
-}):OnChanged(function(Value)
-    JumpPowerEnabled = Value
-    toggleJumpPower(JumpPowerEnabled)
-end)
-
--- Adiciona opções na aba "Combat"
-Tabs.Combat:AddToggle("ESPEnabled", {
-    Title = "Player ESP"
-}):OnChanged(function(Value)
-    ESPEnabled = Value
-    if ESPEnabled then
-        for _, player in pairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer then
-                drawESP(player)
-            end
-        end
-    end
-end)
-
-Tabs.Combat:AddToggle("AimbotEnabled", {
-    Title = "Aimbot"
-}):OnChanged(function(Value)
-    AimbotEnabled = Value
-    if AimbotEnabled then
-        RunService.RenderStepped:Connect(aimbot)
-    end
-end)
-
-Tabs.Combat:AddToggle("HitboxEnabled", {
-    Title = "Hitbox Expandida"
-}):OnChanged(function(Value)
-    IsDisabled = not Value
-end)
-
-Tabs.Combat:AddToggle("WallbangEnabled", {
-    Title = "Wallbang"
-}):OnChanged(function(Value)
-    WallbangEnabled = Value
-    enableWallbang(WallbangEnabled)
-end)
-
-Tabs.Combat:AddToggle("NoclipEnabled", {
-    Title = "Noclip"
-}):OnChanged(function(Value)
-    NoclipEnabled = Value
-    toggleNoclip(NoclipEnabled)
-end)
-
-Tabs.Combat:AddToggle("InvisibilityEnabled", {
-    Title = "Invisibilidade"
-}):OnChanged(function(Value)
-    InvisibilityEnabled = Value
-    toggleInvisibility(InvisibilityEnabled)
-end)
-
--- Adiciona opções na aba "Anti-Cheat"
-Tabs.AntiCheat:AddToggle("AntiCheatBypassEnabled", {
-    Title = "Anti-Cheat Bypass"
-}):OnChanged(function(Value)
-    AntiCheatBypassEnabled = Value
-    enableAntiCheatBypass(AntiCheatBypassEnabled)
-end)
-
-Tabs.AntiCheat:AddToggle("HideNameEnabled", {
-    Title = "Ocultar Nome"
-}):OnChanged(function(Value)
-    HideNameEnabled = Value
-    hideName(HideNameEnabled)
-end)
-
--- Adiciona opções na aba "Performance"
-Tabs.Performance:AddToggle("LowGraphicsEnabled", {
-    Title = "Gráficos Baixos"
-}):OnChanged(function(Value)
-    if Value then
-        settings().Rendering.QualityLevel = "Level01"
-    else
-        settings().Rendering.QualityLevel = "Level10"
-    end
-end)
-
-Tabs.Performance:AddButton("RemoveUnusedAssets", {
-    Title = "Remover Assets Desnecessários"
-}, function()
-    for _, child in pairs(workspace:GetDescendants()) do
-        if child:IsA("BasePart") and not child.Anchored then
-            child:Destroy()
-        end
-    end
-end)
-
-print("ShadowHat 🎩 v2 (Combat + Anti-Cheat + Telekinesis + Performance) carregado com sucesso!")
+        LocalPlayer.Character.Humanoid.JumpPower

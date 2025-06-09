@@ -3,7 +3,7 @@
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
+local UserInputSpace = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
@@ -14,50 +14,34 @@ local Settings = {
     HitboxEnabled = false,
     AimbotEnabled = false,
     WallhackEnabled = false,
-    ToggleKey = Enum.KeyCode.Insert, -- Tecla para toggle (computador)
-    ToggleTouch = "TouchLongPress", -- Toggle para Android
+    InvisibilityEnabled = false,
+    InfJumpEnabled = false,
+    SpeedEnabled = false,
+    AntiCheatEnabled = false,
+    ToggleKey = Enum.KeyCode.Insert,
+    ToggleTouch = "TouchLongPress",
     HitboxSize = 10,
     AimbotSensitivity = 0.1,
-    WallhackTransparency = 0.5
+    WallhackTransparency = 0.5,
+    SpeedValue = 16
 }
 
--- Interface (usando Rayfield UI Library)
+-- Interface (Rayfield UI)
 local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 
 local Window = Rayfield:CreateWindow({
     Name = "Shadow 2.0",
     LoadingTitle = "Shadow 2.0 - desenvolvido por saymon",
     LoadingSubtitle = "Carregando recursos...",
-    ConfigurationSaving = {
-        Enabled = true,
-        FolderName = nil,
-        FileName = "ShadowSettings"
-    },
-    Discord = {
-        Enabled = false,
-        Invite = "discord.gg/example",
-        RememberInvites = false
-    },
+    ConfigurationSaving = {Enabled = true, FolderName = nil, FileName = "ShadowSettings"},
+    Discord = {Enabled = false, Invite = "discord.gg/example", RememberInvites = false},
     KeySystem = false
 })
 
 local MainTab = Window:CreateTab("Principal")
 local VisualTab = Window:CreateTab("Visuals")
 local AimbotTab = Window:CreateTab("Aimbot")
-
--- Seção Principal
-local MainSection = MainTab:CreateSection("Controles")
-local ToggleButton = MainTab:CreateToggle({
-    Name = "Ativar/Desativar Tudo",
-    CurrentValue = false,
-    Flag = "ToggleAll",
-    Callback = function(Value)
-        Settings.ESPEnabled = Value
-        Settings.HitboxEnabled = Value
-        Settings.AimbotEnabled = Value
-        Settings.WallhackEnabled = Value
-    end
-})
+local ExtraTab = Window:CreateTab("Extras")
 
 -- Seção Visual
 local ESPSection = VisualTab:CreateSection("ESP")
@@ -65,9 +49,7 @@ VisualTab:CreateToggle({
     Name = "ESP",
     CurrentValue = Settings.ESPEnabled,
     Flag = "ESP",
-    Callback = function(Value)
-        Settings.ESPEnabled = Value
-    end
+    Callback = function(Value) Settings.ESPEnabled = Value end
 })
 
 local HitboxSection = VisualTab:CreateSection("Hitbox")
@@ -75,39 +57,23 @@ VisualTab:CreateToggle({
     Name = "Hitbox",
     CurrentValue = Settings.HitboxEnabled,
     Flag = "Hitbox",
-    Callback = function(Value)
-        Settings.HitboxEnabled = Value
-    end
+    Callback = function(Value) Settings.HitboxEnabled = Value end
 })
 VisualTab:CreateSlider({
     Name = "Tamanho da Hitbox",
-    Range = {5, 20},
+    Range = {5, 50},
     Increment = 1,
     CurrentValue = Settings.HitboxSize,
     Flag = "HitboxSize",
-    Callback = function(Value)
-        Settings.HitboxSize = Value
-    end
+    Callback = function(Value) Settings.HitboxSize = Value end
 })
 
-local WallhackSection = VisualTab:CreateSection("Wallhack")
+local WallhackSection = VisualTab:CreateSection("Noclip")
 VisualTab:CreateToggle({
     Name = "Atravessar Paredes",
     CurrentValue = Settings.WallhackEnabled,
     Flag = "Wallhack",
-    Callback = function(Value)
-        Settings.WallhackEnabled = Value
-    end
-})
-VisualTab:CreateSlider({
-    Name = "Transparência",
-    Range = {0, 1},
-    Increment = 0.1,
-    CurrentValue = Settings.WallhackTransparency,
-    Flag = "WallhackTransparency",
-    Callback = function(Value)
-        Settings.WallhackTransparency = Value
-    end
+    Callback = function(Value) Settings.WallhackEnabled = Value end
 })
 
 -- Seção Aimbot
@@ -116,9 +82,7 @@ AimbotTab:CreateToggle({
     Name = "Aimbot",
     CurrentValue = Settings.AimbotEnabled,
     Flag = "Aimbot",
-    Callback = function(Value)
-        Settings.AimbotEnabled = Value
-    end
+    Callback = function(Value) Settings.AimbotEnabled = Value end
 })
 AimbotTab:CreateSlider({
     Name = "Sensibilidade",
@@ -126,9 +90,42 @@ AimbotTab:CreateSlider({
     Increment = 0.1,
     CurrentValue = Settings.AimbotSensitivity,
     Flag = "AimbotSensitivity",
-    Callback = function(Value)
-        Settings.AimbotSensitivity = Value
-    end
+    Callback = function(Value) Settings.AimbotSensitivity = Value end
+})
+
+-- Seção Extras
+local ExtraSection = ExtraTab:CreateSection("Extras")
+ExtraTab:CreateToggle({
+    Name = "Invisibilidade",
+    CurrentValue = Settings.InvisibilityEnabled,
+    Flag = "Invisibility",
+    Callback = function(Value) Settings.InvisibilityEnabled = Value end
+})
+ExtraTab:CreateToggle({
+    Name = "Pulo Infinito",
+    CurrentValue = Settings.InfJumpEnabled,
+    Flag = "InfJump",
+    Callback = function(Value) Settings.InfJumpEnabled = Value end
+})
+ExtraTab:CreateToggle({
+    Name = "Velocidade",
+    CurrentValue = Settings.SpeedEnabled,
+    Flag = "Speed",
+    Callback = function(Value) Settings.SpeedEnabled = Value end
+})
+ExtraTab:CreateSlider({
+    Name = "Valor da Velocidade",
+    Range = {16, 100},
+    Increment = 1,
+    CurrentValue = Settings.SpeedValue,
+    Flag = "SpeedValue",
+    Callback = function(Value) Settings.SpeedValue = Value end
+})
+ExtraTab:CreateToggle({
+    Name = "Anti-Cheat",
+    CurrentValue = Settings.AntiCheatEnabled,
+    Flag = "AntiCheat",
+    Callback = function(Value) Settings.AntiCheatEnabled = Value end
 })
 
 -- Funções
@@ -175,8 +172,10 @@ local function Hitbox()
             local humanoidRootPart = player.Character.HumanoidRootPart
             if Settings.HitboxEnabled then
                 humanoidRootPart.Size = Vector3.new(Settings.HitboxSize, Settings.HitboxSize, Settings.HitboxSize)
+                humanoidRootPart.Transparency = 0.3
             else
                 humanoidRootPart.Size = Vector3.new(2, 2, 1)
+                humanoidRootPart.Transparency = 1
             end
         end
     end
@@ -196,13 +195,97 @@ local function Aimbot()
     end
 end
 
+-- Noclip corrigido (evita cair através do chão)
 local function Wallhack()
-    for _, part in pairs(workspace:GetDescendants()) do
-        if part:IsA("BasePart") and part.Transparency < 1 and not part:IsDescendantOf(LocalPlayer.Character) then
-            if Settings.WallhackEnabled then
-                part.Transparency = Settings.WallhackTransparency
-            else
-                part.Transparency = part.OriginalTransparency or 0
+    if Settings.WallhackEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        local humanoid = LocalPlayer.Character:FindFirstChild("Humanoid")
+        local rootPart = LocalPlayer.Character.HumanoidRootPart
+        if humanoid and rootPart then
+            humanoid:ChangeState(Enum.HumanoidStateType.Physics)
+            rootPart.CanCollide = false
+            for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+                if part:IsA("BasePart") and part ~= rootPart then
+                    part.CanCollide = false
+                end
+            end
+            -- Verifica colisão com o chão para evitar cair
+            local ray = Ray.new(rootPart.Position, Vector3.new(0, -10, 0))
+            local hit, position = workspace:FindPartOnRay(ray, LocalPlayer.Character)
+            if hit and (rootPart.Position.Y - position.Y) < 2 then
+                rootPart.Position = Vector3.new(rootPart.Position.X, position.Y + 2, rootPart.Position.Z)
+            end
+        end
+    else
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local humanoid = LocalPlayer.Character:FindFirstChild("Humanoid")
+            local rootPart = LocalPlayer.Character.HumanoidRootPart
+            if humanoid and rootPart then
+                humanoid:ChangeState(Enum.HumanoidStateType.Running)
+                rootPart.CanCollide = true
+                for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = true
+                    end
+                end
+            end
+        end
+    end
+end
+
+-- Invisibilidade
+local function Invisibility()
+    if Settings.InvisibilityEnabled and LocalPlayer.Character then
+        for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.Transparency = 0.9
+            end
+        end
+    else
+        if LocalPlayer.Character then
+            for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.Transparency = 0
+                end
+            end
+        end
+    end
+end
+
+-- Pulo Infinito melhorado (pulo alto)
+local function InfJump()
+    if Settings.InfJumpEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+        local humanoid = LocalPlayer.Character.Humanoid
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+            humanoid.JumpPower = 100 -- Ajuste para pulo alto
+            humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+        else
+            humanoid.JumpPower = 50 -- Valor padrão
+        end
+    end
+end
+
+-- Velocidade
+local function Speed()
+    if Settings.SpeedEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+        local humanoid = LocalPlayer.Character.Humanoid
+        humanoid.WalkSpeed = Settings.SpeedValue
+    else
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            local humanoid = LocalPlayer.Character.Humanoid
+            humanoid.WalkSpeed = 16
+        end
+    end
+end
+
+-- Anti-Cheat básico (detecta alterações suspeitas)
+local function AntiCheat()
+    if Settings.AntiCheatEnabled then
+        local humanoid = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid")
+        if humanoid then
+            if humanoid.WalkSpeed > 50 or humanoid.JumpPower > 100 then
+                humanoid.WalkSpeed = 16
+                humanoid.JumpPower = 50
+                warn("Alteração suspeita detectada! Valores redefinidos.")
             end
         end
     end
@@ -211,23 +294,28 @@ end
 -- Toggle
 UserInputService.InputBegan:Connect(function(input)
     if input.KeyCode == Settings.ToggleKey then
-        local newValue = not (Settings.ESPEnabled and Settings.HitboxEnabled and Settings.AimbotEnabled and Settings.WallhackEnabled)
+        local newValue = not Settings.WallhackEnabled
         Settings.ESPEnabled = newValue
         Settings.HitboxEnabled = newValue
         Settings.AimbotEnabled = newValue
         Settings.WallhackEnabled = newValue
-        ToggleButton:Set(newValue)
+        Settings.InvisibilityEnabled = newValue
+        Settings.InfJumpEnabled = newValue
+        Settings.SpeedEnabled = newValue
+        Settings.AntiCheatEnabled = newValue
     end
 end)
 
--- Touch Toggle para Android
 UserInputService.TouchLongPress:Connect(function(touch)
-    local newValue = not (Settings.ESPEnabled and Settings.HitboxEnabled and Settings.AimbotEnabled and Settings.WallhackEnabled)
+    local newValue = not Settings.WallhackEnabled
     Settings.ESPEnabled = newValue
     Settings.HitboxEnabled = newValue
     Settings.AimbotEnabled = newValue
     Settings.WallhackEnabled = newValue
-    ToggleButton:Set(newValue)
+    Settings.InvisibilityEnabled = newValue
+    Settings.InfJumpEnabled = newValue
+    Settings.SpeedEnabled = newValue
+    Settings.AntiCheatEnabled = newValue
 end)
 
 -- Loop
@@ -237,5 +325,9 @@ RunService.RenderStepped:Connect(function()
         Hitbox()
         Aimbot()
         Wallhack()
+        Invisibility()
+        InfJump()
+        Speed()
+        AntiCheat()
     end
 end)

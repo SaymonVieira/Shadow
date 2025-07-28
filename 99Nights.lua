@@ -2,9 +2,8 @@ repeat wait() until game:IsLoaded()
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
 
--- Função de notificação (mantida)
+-- Função de notificação (igual ao seu script)
 local function createNotification(title, content, duration, color, parent)
     duration = duration or 5
     color = color or Color3.fromRGB(255, 188, 254)
@@ -20,23 +19,6 @@ local function getScriptLoaderUrl()
         [6042520] = "https://api.luarmor.net/files/v3/loaders/00e140acb477c5ecde501c1d448df6f9.lua", -- 99 noites na floresta
     }
     return scriptMap[creatorId]
-end
-
--- Função para executar o script
-local function executeScript()
-    local scriptUrl = getScriptLoaderUrl()
-    if not scriptUrl then
-        createNotification("Erro", "Jogo não suportado!", 5, Color3.fromRGB(255, 85, 85), ScreenGui)
-        return
-    end
-    local success, result = pcall(function()
-        return loadstring(game:HttpGet(scriptUrl))()
-    end)
-    if success then
-        createNotification("Sucesso", "Script executado!", 4, Color3.fromRGB(85, 255, 127), ScreenGui)
-    else
-        createNotification("Erro", "Falha ao executar o script.", 5, Color3.fromRGB(255, 85, 85), ScreenGui)
-    end
 end
 
 -- Interface original (sem Key)
@@ -207,7 +189,16 @@ ExecButtonCorner.CornerRadius = UDim.new(0, 8)
 ExecButtonCorner.Parent = ExecButton
 
 ExecButton.MouseButton1Click:Connect(function()
-    executeScript()
+    -- Fecha a interface antes de executar o script
+    ScreenGui:Destroy()
+    -- Executa o loader da forma mais limpa possível
+    local scriptUrl = getScriptLoaderUrl()
+    if not scriptUrl then
+        return
+    end
+    pcall(function()
+        loadstring(game:HttpGet(scriptUrl))()
+    end)
 end)
 
 -- Fechar/minimizar
